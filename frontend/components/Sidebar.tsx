@@ -29,7 +29,7 @@ interface SidebarItem {
   label: string;
   to: string;
 }
-
+  
 interface SidebarGroup {
   title: string;
   items: SidebarItem[];
