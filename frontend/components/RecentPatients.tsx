@@ -1,0 +1,44 @@
+"use client";
+
+import { MoreVertical, ChevronDown } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+
+const rows = [
+  { name: "Aarav Rahman", time: "Today at 07:32 PM", status: "New", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80" },
+  { name: "Hasan Mahmud", time: "Today at 06:12 PM", status: "New", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80" },
+  { name: "Sakil Mahmud", time: "Today at 05:24 PM", status: "Returning", avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=80" },
+  { name: "Rakibul Haque", time: "Today at 04:02 PM", status: "New", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80" },
+];
+
+const statusColor: Record<string, string> = {
+  New: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  Returning: "bg-blue-50 text-blue-700 border-blue-100",
+};
+
+export function RecentPatients() {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-slate-900" style={{ fontWeight: 600 }}>Recent Patients</h3>
+        <button className="text-slate-400 hover:text-slate-700"><MoreVertical className="w-4 h-4" /></button>
+      </div>
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1 pb-3 border-b border-slate-100">
+        <span className="flex items-center gap-1">Patient Name <ChevronDown className="w-3 h-3" /></span>
+        <span>Registered</span>
+        <span className="flex items-center gap-1">Status <ChevronDown className="w-3 h-3" /></span>
+      </div>
+      <div>
+        {rows.map((r) => (
+          <div key={r.name} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
+            <div className="flex items-center gap-2.5 flex-1">
+              <Avatar className="w-8 h-8"><AvatarImage src={r.avatar} /><AvatarFallback>{r.name[0]}</AvatarFallback></Avatar>
+              <span className="text-sm text-slate-800">Dr. {r.name}</span>
+            </div>
+            <span className="text-sm text-slate-500 flex-1">{r.time}</span>
+            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs border ${statusColor[r.status]}`}>{r.status}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
