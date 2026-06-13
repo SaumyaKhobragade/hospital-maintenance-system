@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HMS - Sliding Window",
+  title: "Vitality - Sliding Window",
   description: "",
 };
 

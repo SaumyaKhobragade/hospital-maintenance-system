@@ -18,7 +18,7 @@ export default function LandingNavBar() {
                 <div className="flex items-center gap-4">
                     <HeartPulse size={30} />
                     <Link href="/" className="text-xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
-                        HMS
+                        Vitality
                     </Link>
                 </div>
                 <div className="hidden md:flex flex-1 items-center justify-end gap-8">

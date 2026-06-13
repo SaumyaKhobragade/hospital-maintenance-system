@@ -11,7 +11,7 @@ export default function LandingFooter() {
                         <div className="flex items-center gap-2 mb-6">
                             <HeartPulse size={35} />
                             <span className="text-3xl font-bold text-slate-900 dark:text-white">
-                                HMS
+                                Vitality
                             </span>
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400">

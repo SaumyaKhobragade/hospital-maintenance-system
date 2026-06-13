@@ -20,7 +20,7 @@ export default function LandingGovernance() {
                             </h2>
                             <p className="text-slate-300 text-lg leading-relaxed mb-8">
                                 We believe technology should augment, not replace, medical
-                                judgment. HMS is built on a philosophy of "Observational
+                                judgment. Vitality is built on a philosophy of "Observational
                                 Trust," where AI provides actionable intelligence while human
                                 oversight retains the final authority on critical care
                                 decisions.

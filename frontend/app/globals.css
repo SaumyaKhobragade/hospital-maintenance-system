@@ -46,20 +46,20 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  /* HMS Severity Levels */
+  /* Vitality Severity Levels */
   --color-severity-critical: var(--severity-critical);
   --color-severity-urgent: var(--severity-urgent);
   --color-severity-moderate: var(--severity-moderate);
   --color-severity-stable: var(--severity-stable);
   --color-severity-minimal: var(--severity-minimal);
 
-  /* HMS Branding & UI */
+  /* Vitality Branding & UI */
   --color-brand-primary: var(--brand-primary);
   --color-brand-secondary: var(--brand-secondary);
   --color-system-success: var(--system-success);
   --color-system-info: var(--system-info);
 
-  /* HMS Neutral Scale */
+  /* Vitality Neutral Scale */
   --color-neutral-bg-main: var(--neutral-bg-main);
   --color-neutral-surface: var(--neutral-surface);
   --color-neutral-border: var(--neutral-border);
@@ -67,7 +67,7 @@
   --color-neutral-text-secondary: var(--neutral-text-secondary);
   --color-neutral-text-muted: var(--neutral-text-muted);
 
-  /* HMS Semantic Backgrounds */
+  /* Vitality Semantic Backgrounds */
   --color-alert-bg-red: var(--alert-bg-red);
   --color-alert-bg-amber: var(--alert-bg-amber);
   --color-alert-bg-sky: var(--alert-bg-sky);
@@ -107,20 +107,20 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* HMS Severity Levels */
+  /* Vitality Severity Levels */
   --severity-critical: #dc2626;
   --severity-urgent: #f59e0b;
   --severity-moderate: #3b82f6;
   --severity-stable: #10b981;
   --severity-minimal: #6b7280;
 
-  /* HMS Branding & UI */
+  /* Vitality Branding & UI */
   --brand-primary: #0ea5e9;
   --brand-secondary: #8b5cf6;
   --system-success: #10b981;
   --system-info: #3b82f6;
 
-  /* HMS Neutral Scale */
+  /* Vitality Neutral Scale */
   --neutral-bg-main: #f9fafb;
   --neutral-surface: #ffffff;
   --neutral-border: #e5e7eb;
@@ -128,7 +128,7 @@
   --neutral-text-secondary: #4b5563;
   --neutral-text-muted: #9ca3af;
 
-  /* HMS Semantic Backgrounds */
+  /* Vitality Semantic Backgrounds */
   --alert-bg-red: #fef2f2;
   --alert-bg-amber: #fffbeb;
   --alert-bg-sky: #f0f9ff;
