@@ -683,39 +683,47 @@ export default function AIClinicalSummaryPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 px-2">
+                <div className="flex flex-col gap-4 pl-1.5 text-xs text-slate-650">
                   {activePatient.timeline.map((t, idx) => (
-                    <React.Fragment key={idx}>
-                      <div className="flex items-center gap-3 relative flex-1">
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            {t.status === "completed" ? (
-                              <div className="h-6 w-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              </div>
-                            ) : t.status === "processing" ? (
-                              <div className="h-6 w-6 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
-                                <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-                              </div>
-                            ) : (
-                              <div className="h-6 w-6 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
-                                <div className="h-2 w-2 rounded-full bg-slate-400" />
-                              </div>
-                            )}
-                            <span className="text-xs font-semibold text-slate-800 truncate">{t.step}</span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 font-mono mt-0.5 ml-8">{t.time}</span>
-                        </div>
-                      </div>
-                      
+                    <div key={idx} className="flex gap-3.5 relative">
                       {idx < activePatient.timeline.length - 1 && (
-                        <div className="hidden md:block w-8 h-px bg-slate-100 shrink-0" />
+                        <div className="w-px bg-slate-200 absolute left-3 top-5 bottom-0" />
                       )}
-                    </React.Fragment>
+                      <div className="shrink-0 mt-0.5">
+                        {t.status === "completed" ? (
+                          <div className="h-6 w-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </div>
+                        ) : t.status === "processing" ? (
+                          <div className="h-6 w-6 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          </div>
+                        ) : (
+                          <div className="h-6 w-6 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+                            <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-800 leading-none">{t.step}</span>
+                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border ${
+                            t.status === "completed"
+                              ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                              : t.status === "processing"
+                              ? "bg-blue-50 border-blue-100 text-blue-700"
+                              : "bg-slate-50 border-slate-200 text-slate-500"
+                          }`}>
+                            {t.status}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono mt-0.5">{t.time}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
 
-                <div className="border-t border-slate-100 pt-4 flex justify-end gap-3">
+                <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row justify-end gap-3">
                   <button className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-700 transition">
                     Flag Incident
                   </button>
