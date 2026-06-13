@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Activity, Users, AlertTriangle, Sliders, GitBranch, UserPlus, HeartPulse, BrainCircuit } from "lucide-react";
+import { Home, Activity, Users, AlertTriangle, Sliders, GitBranch, UserPlus, HeartPulse, BrainCircuit, Mic, Terminal, UsersRound, ScanSearch } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,6 +13,10 @@ const items = [
   { icon: Sliders, label: "Policies", to: "/dashboard/policy-config" },
   { icon: UserPlus, label: "Add Patient", to: "/dashboard/add-patient" },
   { icon: BrainCircuit, label: "AI Clinical Summary", to: "/dashboard/ai-clinical-summary" },
+  { icon: Mic, label: "Voice Check-In Kiosk", to: "/dashboard/voice-checkin" },
+  { icon: Terminal, label: "AI Telemetry", to: "/dashboard/telemetry" },
+  { icon: UsersRound, label: "Patients", to: "/dashboard/patients" },
+  { icon: ScanSearch, label: "RAG History", to: "/dashboard/rag" },
 ];
 
 export function Sidebar() {
