@@ -15,7 +15,7 @@ from services.vector_store import VectorStoreService
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Vitality RAG Medical History Backend",
+    title="HMS RAG Medical History Backend",
     description="RAG service to store and synthesize patient medical histories using LangChain, LangGraph, and ChromaDB.",
     version="1.0.0",
 )
