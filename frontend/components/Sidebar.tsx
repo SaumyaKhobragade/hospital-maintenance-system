@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Activity, Users, AlertTriangle, FileText, Sliders, GitBranch, UserPlus, HeartPulse } from "lucide-react";
+import { Home, Activity, Users, AlertTriangle, Sliders, GitBranch, UserPlus, HeartPulse, BrainCircuit } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,14 +12,14 @@ const items = [
   { icon: AlertTriangle, label: "Alerts", to: "/dashboard/alerts" },
   { icon: Sliders, label: "Policies", to: "/dashboard/policy-config" },
   { icon: UserPlus, label: "Add Patient", to: "/dashboard/add-patient" },
-  { icon: FileText, label: "Reports", to: "/dashboard/reports" },
+  { icon: BrainCircuit, label: "AI Clinical Summary", to: "/dashboard/ai-clinical-summary" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center py-6 gap-1 self-start sticky top-23">
+    <aside className="w-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center py-6 gap-1 self-start sticky top-24">
       <Link href="/" className="mb-4 w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-200">
         <HeartPulse className="w-5 h-5" />
       </Link>
