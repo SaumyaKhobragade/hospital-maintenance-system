@@ -1,7 +1,8 @@
 "use client";
 
-import { Search, ChevronDown, MoreHorizontal, Filter, Phone, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronDown, MoreHorizontal, Filter, Phone, ChevronLeft, ChevronRight, Wifi } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { useSseStats } from "../lib/SseContext";
 
 type Patient = {
   no: string;
@@ -31,12 +32,22 @@ const statusColor: Record<Patient["status"], string> = {
 const tabs = ["All", "Active", "Inactive"];
 
 export function PatientTable() {
+  const stats = useSseStats();
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
       <div className="flex items-center justify-between p-5 pb-4">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-1.5 text-slate-900" style={{ fontWeight: 600 }}>
-            All Patients <ChevronDown className="w-4 h-4 text-slate-400" />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-slate-900" style={{ fontWeight: 600 }}>
+              All Patients <ChevronDown className="w-4 h-4 text-slate-400" />
+            </div>
+            {/* Live queue badge from SSE */}
+            {stats && (
+              <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                <Wifi className="w-3 h-3" /> {stats.totalPatientsWaiting.toLocaleString()} waiting
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1">
             {tabs.map((t) => (
@@ -134,7 +145,7 @@ export function PatientTable() {
           <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
             <ChevronLeft className="w-4 h-4" /> Prev
           </button>
-          <span className="text-slate-500">1 of 246</span>
+          <span className="text-slate-500">1 of {stats ? Math.ceil(stats.totalPatientsWaiting / 12) : "—"}</span>
           <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
             Next <ChevronRight className="w-4 h-4" />
           </button>

@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.5'
+    id 'io.spring.dependency-management' version '1.1.5'
+}
+
+group = 'com.example'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot Web (includes SSE / MVC)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Jackson (JSON serialization)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // OkHttp (Supabase REST calls)
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // org.json (JSON parsing)
+    implementation 'org.json:json:20240303'
+
+    // Tests
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xlint:none']
+    // Allow JDK 26 to compile source-level 17 without errors
+    options.release = null
+}
+
+test {
+    useJUnitPlatform()
+}

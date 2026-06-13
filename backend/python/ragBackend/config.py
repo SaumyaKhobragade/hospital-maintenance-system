@@ -19,7 +19,12 @@ USE_GEMINI_EMBEDDINGS = bool(GEMINI_API_KEY)
 EMBEDDING_MODEL_NAME = "models/gemini-embedding-001" if USE_GEMINI_EMBEDDINGS else "all-MiniLM-L6-v2"
 
 # LLM Configuration
-LLM_MODEL_NAME = "llama-3.3-70b-versatile"  # Groq model
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()  # "groq" or "ollama"
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "llama-3.3-70b-versatile")
+
+# Ollama Configuration (used when LLM_PROVIDER = "ollama")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_LLM_MODEL = os.getenv("OLLAMA_LLM_MODEL", "llama3")
 
 # Document Processing
 CHUNK_SIZE = 800
