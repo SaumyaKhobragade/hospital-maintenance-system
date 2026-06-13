@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, END
 from langchain_core.prompts import ChatPromptTemplate
 import config
 from langchain_groq import ChatGroq
+from langchain_ollama import ChatOllama
 # Pydantic schemas for structured output
 class ClinicalFacts(BaseModel):
     chronic_conditions: List[str] = Field(default=[], description="List of chronic medical conditions (e.g. Hypertension, Diabetes, Asthma).")
@@ -28,14 +29,20 @@ class AgentState(TypedDict):
 
 class SummaryAgent:
     def __init__(self):
-        # Initialize Google Gemini model if API key is set
-
-        self.llm = ChatGroq(
-            model=config.LLM_MODEL_NAME,
-            groq_api_key=config.GROQ_API_KEY,
-            temperature=0.2
-        )
-        print(f"[OK] SummaryAgent: Initialized ChatGroq with {config.LLM_MODEL_NAME}")
+        if config.LLM_PROVIDER == "ollama":
+            self.llm = ChatOllama(
+                model=config.OLLAMA_LLM_MODEL,
+                base_url=config.OLLAMA_BASE_URL,
+                temperature=0.2
+            )
+            print(f"[OK] SummaryAgent: Initialized ChatOllama with {config.OLLAMA_LLM_MODEL}")
+        else:
+            self.llm = ChatGroq(
+                model=config.LLM_MODEL_NAME,
+                groq_api_key=config.GROQ_API_KEY,
+                temperature=0.2
+            )
+            print(f"[OK] SummaryAgent: Initialized ChatGroq with {config.LLM_MODEL_NAME}")
 
         self._build_graph()
 
