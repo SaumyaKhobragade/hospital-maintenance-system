@@ -1,0 +1,1834 @@
+{
+  "architecture": {},
+  "heatmap": {
+    "frontend\\node_modules\\flatted\\python\\flatted.py": {
+      "file": "frontend\\node_modules\\flatted\\python\\flatted.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\main.py": {
+      "file": "backend\\python\\unified\\main.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\main.py": {
+      "file": "backend\\python\\sarvam\\main.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\risk_agent.py": {
+      "file": "backend\\python\\unified\\services\\risk_agent.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/__pycache__/config.cpython-312.pyc": {
+      "file": "backend/python/unified/__pycache__/config.cpython-312.pyc",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend/python/unified/chroma_db/chroma.sqlite3": {
+      "file": "backend/python/unified/chroma_db/chroma.sqlite3",
+      "riskScore": 18.2,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\combined_report.py": {
+      "file": "backend\\python\\unified\\services\\combined_report.py",
+      "riskScore": 5.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\tts-gen.py": {
+      "file": "backend\\python\\unified\\tts-gen.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/main.py": {
+      "file": "backend/python/unified/main.py",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\services\\scribe_workflow.py": {
+      "file": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\db\\mongo_client.py": {
+      "file": "backend\\python\\sarvam\\db\\mongo_client.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "frontend/lib/supabaseClient.ts": {
+      "file": "frontend/lib/supabaseClient.ts",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "frontend/app/dashboard/voice-checkin/page.tsx": {
+      "file": "frontend/app/dashboard/voice-checkin/page.tsx",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\llm_factory.py": {
+      "file": "backend\\python\\unified\\services\\llm_factory.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\vector_store.py": {
+      "file": "backend\\python\\unified\\services\\vector_store.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\services\\tools.py": {
+      "file": "backend\\python\\sarvam\\services\\tools.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/db/mongo_client.py": {
+      "file": "backend/python/unified/db/mongo_client.py",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\db\\__init__.py": {
+      "file": "backend\\python\\unified\\db\\__init__.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\scribe_workflow.py": {
+      "file": "backend\\python\\unified\\services\\scribe_workflow.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\summary_agent.py": {
+      "file": "backend\\python\\unified\\services\\summary_agent.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/__pycache__/main.cpython-312.pyc": {
+      "file": "backend/python/unified/__pycache__/main.cpython-312.pyc",
+      "riskScore": 14.6,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend/python/unified/services/__pycache__/combined_report.cpython-312.pyc": {
+      "file": "backend/python/unified/services/__pycache__/combined_report.cpython-312.pyc",
+      "riskScore": 18.6,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\ragBackend\\services\\risk_agent.py": {
+      "file": "backend\\python\\ragBackend\\services\\risk_agent.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\document_processor.py": {
+      "file": "backend\\python\\unified\\services\\document_processor.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/chroma_db/257562ee-abb7-446f-bb80-9e1425796357/length.bin": {
+      "file": "backend/python/unified/chroma_db/257562ee-abb7-446f-bb80-9e1425796357/length.bin",
+      "riskScore": 14.6,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\config.py": {
+      "file": "backend\\python\\unified\\config.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "frontend/lib/pythonApi.ts": {
+      "file": "frontend/lib/pythonApi.ts",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend/python/unified/db/__init__.py": {
+      "file": "backend/python/unified/db/__init__.py",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\ragBackend\\services\\summary_agent.py": {
+      "file": "backend\\python\\ragBackend\\services\\summary_agent.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\services\\__init__.py": {
+      "file": "backend\\python\\sarvam\\services\\__init__.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/services/report_workflow.py": {
+      "file": "backend/python/unified/services/report_workflow.py",
+      "riskScore": 15.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\db\\mongo_client.py": {
+      "file": "backend\\python\\unified\\db\\mongo_client.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\services\\report_workflow.py": {
+      "file": "backend\\python\\sarvam\\services\\report_workflow.py",
+      "riskScore": 5.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/db/__pycache__/mongo_client.cpython-312.pyc": {
+      "file": "backend/python/unified/db/__pycache__/mongo_client.cpython-312.pyc",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\services\\llm_factory.py": {
+      "file": "backend\\python\\sarvam\\services\\llm_factory.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\ragBackend\\services\\document_processor.py": {
+      "file": "backend\\python\\ragBackend\\services\\document_processor.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\__init__.py": {
+      "file": "backend\\python\\unified\\services\\__init__.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "frontend/app/dashboard/rag/page.tsx": {
+      "file": "frontend/app/dashboard/rag/page.tsx",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\ragBackend\\config.py": {
+      "file": "backend\\python\\ragBackend\\config.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\config.py": {
+      "file": "backend\\python\\sarvam\\config.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\sarvam\\db\\__init__.py": {
+      "file": "backend\\python\\sarvam\\db\\__init__.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\ragBackend\\main.py": {
+      "file": "backend\\python\\ragBackend\\main.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\test_unified.py": {
+      "file": "backend\\python\\unified\\test_unified.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\tools.py": {
+      "file": "backend\\python\\unified\\services\\tools.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\ragBackend\\services\\vector_store.py": {
+      "file": "backend\\python\\ragBackend\\services\\vector_store.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\services\\report_workflow.py": {
+      "file": "backend\\python\\unified\\services\\report_workflow.py",
+      "riskScore": 5.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "frontend/app/dashboard/add-patient/page.tsx": {
+      "file": "frontend/app/dashboard/add-patient/page.tsx",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "frontend/app/dashboard/ai-clinical-summary/page.tsx": {
+      "file": "frontend/app/dashboard/ai-clinical-summary/page.tsx",
+      "riskScore": 14.6,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\unified\\test_sarvam.py": {
+      "file": "backend\\python\\unified\\test_sarvam.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    },
+    "backend/python/unified/db/__pycache__/__init__.cpython-312.pyc": {
+      "file": "backend/python/unified/db/__pycache__/__init__.cpython-312.pyc",
+      "riskScore": 11.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend/python/unified/services/__pycache__/report_workflow.cpython-312.pyc": {
+      "file": "backend/python/unified/services/__pycache__/report_workflow.cpython-312.pyc",
+      "riskScore": 15.3,
+      "riskLevel": "Safe",
+      "reasons": [
+        "High ownership risk (concentration 100%)"
+      ],
+      "confidence": 90
+    },
+    "backend\\python\\ragBackend\\test_rag_backend.py": {
+      "file": "backend\\python\\ragBackend\\test_rag_backend.py",
+      "riskScore": 1.0,
+      "riskLevel": "Safe",
+      "reasons": [],
+      "confidence": 90
+    }
+  },
+  "hotspots": [],
+  "impactPredictions": [
+    {
+      "file": "frontend\\node_modules\\flatted\\python\\flatted.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\main.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\main.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\risk_agent.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend/python/unified/__pycache__/config.cpython-312.pyc",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend/python/unified/chroma_db/chroma.sqlite3",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 18.2
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\combined_report.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 5.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\tts-gen.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend/python/unified/main.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\db\\mongo_client.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "frontend/lib/supabaseClient.ts",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "frontend/app/dashboard/voice-checkin/page.tsx",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\llm_factory.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\vector_store.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\services\\tools.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend/python/unified/db/mongo_client.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\db\\__init__.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\scribe_workflow.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\summary_agent.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend/python/unified/__pycache__/main.cpython-312.pyc",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 14.6
+      }
+    },
+    {
+      "file": "backend/python/unified/services/__pycache__/combined_report.cpython-312.pyc",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 18.6
+      }
+    },
+    {
+      "file": "backend\\python\\ragBackend\\services\\risk_agent.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\document_processor.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend/python/unified/chroma_db/257562ee-abb7-446f-bb80-9e1425796357/length.bin",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 14.6
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\config.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "frontend/lib/pythonApi.ts",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend/python/unified/db/__init__.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend\\python\\ragBackend\\services\\summary_agent.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\services\\__init__.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend/python/unified/services/report_workflow.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 15.3
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\db\\mongo_client.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\services\\report_workflow.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 5.0
+      }
+    },
+    {
+      "file": "backend/python/unified/db/__pycache__/mongo_client.cpython-312.pyc",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\services\\llm_factory.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\ragBackend\\services\\document_processor.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\__init__.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "frontend/app/dashboard/rag/page.tsx",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend\\python\\ragBackend\\config.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\config.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\sarvam\\db\\__init__.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\ragBackend\\main.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\test_unified.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\tools.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\ragBackend\\services\\vector_store.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\services\\report_workflow.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 5.0
+      }
+    },
+    {
+      "file": "frontend/app/dashboard/add-patient/page.tsx",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "frontend/app/dashboard/ai-clinical-summary/page.tsx",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 14.6
+      }
+    },
+    {
+      "file": "backend\\python\\unified\\test_sarvam.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    },
+    {
+      "file": "backend/python/unified/db/__pycache__/__init__.cpython-312.pyc",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 11.3
+      }
+    },
+    {
+      "file": "backend/python/unified/services/__pycache__/report_workflow.cpython-312.pyc",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 15.3
+      }
+    },
+    {
+      "file": "backend\\python\\ragBackend\\test_rag_backend.py",
+      "impact": {
+        "directFiles": [],
+        "indirectFiles": [],
+        "subsystems": [],
+        "estimatedRisk": 1.0
+      }
+    }
+  ],
+  "riskClusters": [],
+  "recommendations": [],
+  "dependency_graph": {
+    "nodes": [
+      "backend\\python\\ragBackend\\config.py",
+      "backend\\python\\ragBackend\\main.py",
+      "backend\\python\\ragBackend\\test_rag_backend.py",
+      "backend\\python\\ragBackend\\services\\document_processor.py",
+      "backend\\python\\ragBackend\\services\\risk_agent.py",
+      "backend\\python\\ragBackend\\services\\summary_agent.py",
+      "backend\\python\\ragBackend\\services\\vector_store.py",
+      "backend\\python\\sarvam\\config.py",
+      "backend\\python\\sarvam\\main.py",
+      "backend\\python\\sarvam\\db\\mongo_client.py",
+      "backend\\python\\sarvam\\db\\__init__.py",
+      "backend\\python\\sarvam\\services\\llm_factory.py",
+      "backend\\python\\sarvam\\services\\report_workflow.py",
+      "backend\\python\\sarvam\\services\\scribe_workflow.py",
+      "backend\\python\\sarvam\\services\\tools.py",
+      "backend\\python\\sarvam\\services\\__init__.py",
+      "backend\\python\\unified\\config.py",
+      "backend\\python\\unified\\main.py",
+      "backend\\python\\unified\\test_sarvam.py",
+      "backend\\python\\unified\\test_unified.py",
+      "backend\\python\\unified\\tts-gen.py",
+      "backend\\python\\unified\\db\\mongo_client.py",
+      "backend\\python\\unified\\db\\__init__.py",
+      "backend\\python\\unified\\services\\combined_report.py",
+      "backend\\python\\unified\\services\\document_processor.py",
+      "backend\\python\\unified\\services\\llm_factory.py",
+      "backend\\python\\unified\\services\\report_workflow.py",
+      "backend\\python\\unified\\services\\risk_agent.py",
+      "backend\\python\\unified\\services\\scribe_workflow.py",
+      "backend\\python\\unified\\services\\summary_agent.py",
+      "backend\\python\\unified\\services\\tools.py",
+      "backend\\python\\unified\\services\\vector_store.py",
+      "backend\\python\\unified\\services\\__init__.py",
+      "frontend\\node_modules\\flatted\\python\\flatted.py"
+    ],
+    "edges": [
+      {
+        "from": "backend\\python\\ragBackend\\config.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\config.py",
+        "to": "pathlib"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\config.py",
+        "to": "dotenv"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "uvicorn"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "fastapi"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "fastapi.middleware.cors"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "groq.types"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "IPython.testing"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "services.document_processor"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "services.risk_agent"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "services.summary_agent"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "services.vector_store"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "traceback"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\main.py",
+        "to": "traceback"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\test_rag_backend.py",
+        "to": "urllib.request"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\test_rag_backend.py",
+        "to": "urllib.parse"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\test_rag_backend.py",
+        "to": "json"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\test_rag_backend.py",
+        "to": "uuid"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\test_rag_backend.py",
+        "to": "mimetypes"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\test_rag_backend.py",
+        "to": "sys"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\test_rag_backend.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\document_processor.py",
+        "to": "io"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\document_processor.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\document_processor.py",
+        "to": "pypdf"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\document_processor.py",
+        "to": "docx"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\document_processor.py",
+        "to": "langchain_text_splitters"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\document_processor.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\risk_agent.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\risk_agent.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\risk_agent.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\risk_agent.py",
+        "to": "langchain_groq"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\risk_agent.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\risk_agent.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\summary_agent.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\summary_agent.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\summary_agent.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\summary_agent.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\summary_agent.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\summary_agent.py",
+        "to": "langchain_groq"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\summary_agent.py",
+        "to": "langchain_ollama"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\vector_store.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\vector_store.py",
+        "to": "langchain_community.vectorstores"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\vector_store.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\vector_store.py",
+        "to": "langchain_community.embeddings"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\vector_store.py",
+        "to": "langchain_google_genai"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\vector_store.py",
+        "to": "random"
+      },
+      {
+        "from": "backend\\python\\ragBackend\\services\\vector_store.py",
+        "to": "random"
+      },
+      {
+        "from": "backend\\python\\sarvam\\config.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\sarvam\\config.py",
+        "to": "pathlib"
+      },
+      {
+        "from": "backend\\python\\sarvam\\config.py",
+        "to": "dotenv"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "uuid"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "datetime"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "uvicorn"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "fastapi"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "fastapi.middleware.cors"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "services.scribe_workflow"
+      },
+      {
+        "from": "backend\\python\\sarvam\\main.py",
+        "to": "services.report_workflow"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "asyncio"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "datetime"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "motor.motor_asyncio"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "pymongo.errors"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\mongo_client.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\sarvam\\db\\__init__.py",
+        "to": "mongo_client"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\llm_factory.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\llm_factory.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\llm_factory.py",
+        "to": "langchain_core.language_models.chat_models"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\llm_factory.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\llm_factory.py",
+        "to": "langchain_ollama"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\llm_factory.py",
+        "to": "langchain_groq"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "datetime"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "langgraph.checkpoint.memory"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "services.llm_factory"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\report_workflow.py",
+        "to": "services.tools"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "asyncio"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "langgraph.checkpoint.memory"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "langgraph.types"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "services.llm_factory"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\scribe_workflow.py",
+        "to": "services.tools"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "asyncio"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "datetime"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "sarvamai"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "langchain_core.tools"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\sarvam\\services\\tools.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\unified\\config.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\unified\\config.py",
+        "to": "pathlib"
+      },
+      {
+        "from": "backend\\python\\unified\\config.py",
+        "to": "dotenv"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "uuid"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "asyncio"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "datetime"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "tempfile"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "uvicorn"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "fastapi"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "fastapi.middleware.cors"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "fastapi.responses"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.document_processor"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.vector_store"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.summary_agent"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.risk_agent"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.scribe_workflow"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.report_workflow"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.combined_report"
+      },
+      {
+        "from": "backend\\python\\unified\\main.py",
+        "to": "services.tools"
+      },
+      {
+        "from": "backend\\python\\unified\\test_sarvam.py",
+        "to": "json"
+      },
+      {
+        "from": "backend\\python\\unified\\test_sarvam.py",
+        "to": "sys"
+      },
+      {
+        "from": "backend\\python\\unified\\test_sarvam.py",
+        "to": "uuid"
+      },
+      {
+        "from": "backend\\python\\unified\\test_sarvam.py",
+        "to": "urllib.request"
+      },
+      {
+        "from": "backend\\python\\unified\\test_sarvam.py",
+        "to": "urllib.parse"
+      },
+      {
+        "from": "backend\\python\\unified\\test_sarvam.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\unified\\test_unified.py",
+        "to": "json"
+      },
+      {
+        "from": "backend\\python\\unified\\test_unified.py",
+        "to": "sys"
+      },
+      {
+        "from": "backend\\python\\unified\\test_unified.py",
+        "to": "uuid"
+      },
+      {
+        "from": "backend\\python\\unified\\test_unified.py",
+        "to": "urllib.request"
+      },
+      {
+        "from": "backend\\python\\unified\\test_unified.py",
+        "to": "urllib.parse"
+      },
+      {
+        "from": "backend\\python\\unified\\test_unified.py",
+        "to": "shutil"
+      },
+      {
+        "from": "backend\\python\\unified\\test_unified.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "asyncio"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "datetime"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "motor.motor_asyncio"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "pymongo.errors"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\mongo_client.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\db\\__init__.py",
+        "to": "mongo_client"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\combined_report.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\combined_report.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\combined_report.py",
+        "to": "services.llm_factory"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\document_processor.py",
+        "to": "io"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\document_processor.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\document_processor.py",
+        "to": "pypdf"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\document_processor.py",
+        "to": "docx"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\document_processor.py",
+        "to": "langchain_text_splitters"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\document_processor.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\llm_factory.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\llm_factory.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\llm_factory.py",
+        "to": "langchain_core.language_models.chat_models"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\llm_factory.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\llm_factory.py",
+        "to": "langchain_ollama"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\llm_factory.py",
+        "to": "langchain_groq"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "langgraph.checkpoint.memory"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "services.llm_factory"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\report_workflow.py",
+        "to": "services.tools"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\risk_agent.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\risk_agent.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\risk_agent.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\risk_agent.py",
+        "to": "langchain_groq"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\risk_agent.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\risk_agent.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "langgraph.checkpoint.memory"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "langgraph.types"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "services.llm_factory"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "services.tools"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "services.vector_store"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\scribe_workflow.py",
+        "to": "services.document_processor"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\summary_agent.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\summary_agent.py",
+        "to": "pydantic"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\summary_agent.py",
+        "to": "langgraph.graph"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\summary_agent.py",
+        "to": "langchain_core.prompts"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\summary_agent.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\summary_agent.py",
+        "to": "langchain_groq"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\summary_agent.py",
+        "to": "langchain_ollama"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "__future__"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "asyncio"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "logging"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "os"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "datetime"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "sarvamai"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "langchain_core.tools"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\tools.py",
+        "to": "db"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\vector_store.py",
+        "to": "typing"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\vector_store.py",
+        "to": "langchain_community.vectorstores"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\vector_store.py",
+        "to": "config"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\vector_store.py",
+        "to": "langchain_community.embeddings"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\vector_store.py",
+        "to": "langchain_google_genai"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\vector_store.py",
+        "to": "random"
+      },
+      {
+        "from": "backend\\python\\unified\\services\\vector_store.py",
+        "to": "random"
+      },
+      {
+        "from": "frontend\\node_modules\\flatted\\python\\flatted.py",
+        "to": "json"
+      }
+    ]
+  }
+}

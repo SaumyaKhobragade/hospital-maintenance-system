@@ -18,7 +18,11 @@ from pydantic import BaseModel, Field
 import config
 from db import fire_telemetry
 from services.llm_factory import build_llm
-from services.tools import send_patient_report_email, transcribe_audio_with_sarvam
+from services.tools import (
+    send_patient_report_email,
+    transcribe_audio_with_sarvam,
+    transcribe_audio_with_elevenlabs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,7 @@ class ScribeWorkflowState(TypedDict, total=False):
     patient_id: str
     patient_email: str
     audio_file_path: str
+    stt_provider: str           # "sarvam" (India) or "elevenlabs" (International)
     raw_transcript: str
     structured_soap_note: str
     patient_report_draft: str
@@ -36,8 +41,18 @@ class ScribeWorkflowState(TypedDict, total=False):
 async def transcribe_ambient_audio(state: Dict[str, Any]) -> Dict[str, Any]:
     audio_path = state.get("audio_file_path", "")
     patient_id = state.get("patient_id", "unknown")
-    logger.info("[SCRIBE:Node1] Transcribing audio  patient=%s  file=%s", patient_id, audio_path)
-    transcript = await transcribe_audio_with_sarvam(audio_path)
+    provider = state.get("stt_provider", "sarvam")
+
+    logger.info(
+        "[SCRIBE:Node1] Transcribing audio  patient=%s  provider=%s  file=%s",
+        patient_id, provider, audio_path,
+    )
+
+    if provider == "elevenlabs":
+        transcript = await transcribe_audio_with_elevenlabs(audio_path)
+    else:
+        transcript = await transcribe_audio_with_sarvam(audio_path)
+
     return {"raw_transcript": transcript}
 
 
@@ -216,12 +231,14 @@ class ScribeWorkflowGraph:
         patient_id: str,
         patient_email: str,
         audio_file_path: str,
+        stt_provider: str = "sarvam",
     ) -> Dict[str, Any]:
         config_dict = {"configurable": {"thread_id": thread_id}}
         initial_state = {
             "patient_id": patient_id,
             "patient_email": patient_email,
             "audio_file_path": audio_file_path,
+            "stt_provider": stt_provider,
             "raw_transcript": "",
             "structured_soap_note": "",
             "patient_report_draft": "",
