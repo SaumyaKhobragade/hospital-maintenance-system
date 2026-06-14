@@ -96,6 +96,24 @@ export interface TelemetryResponse {
   count: number;
 }
 
+export interface PrescriptionMedication {
+  name: string;
+  dosage: string;
+  frequency: string;
+}
+
+export interface PrescriptionResponse {
+  patient_id: string;
+  filename: string;
+  raw_ocr_text: string;
+  medications: PrescriptionMedication[];
+  instructions: string[];
+  prescribing_doctor: string;
+  prescription_date: string;
+  chunks_stored: number;
+  status: string;
+}
+
 /** A patient document as stored in MongoDB via the /api/patients registry. */
 export interface PatientRecord {
   id: string;
@@ -233,12 +251,14 @@ export const pythonApi = {
     patientId: string,
     patientEmail: string,
     audioBlob: Blob,
-    filename = "recording.wav"
+    filename = "recording.wav",
+    sttProvider: "sarvam" | "elevenlabs" = "sarvam"
   ): Promise<ScribeDraftResponse> => {
     const form = new FormData();
     form.append("patient_id", patientId);
     form.append("patient_email", patientEmail);
     form.append("audio", audioBlob, filename);
+    form.append("stt_provider", sttProvider);
     return pyPostForm<ScribeDraftResponse>("/scribe/upload", form);
   },
 
@@ -304,4 +324,23 @@ export const pythonApi = {
   /** Clear all collections/documents in ChromaDB. */
   clearChromaDb: () =>
     pyDelete<{ status: string; message: string }>("/api/chroma/clear"),
+
+  // ── Prescription Reader ────────────────────────────────────────────
+
+  /**
+   * Upload a prescription image or PDF for a patient.
+   * Sarvam AI digitizes the document, LLM extracts structured medications,
+   * and the result is stored in ChromaDB as patient history.
+   */
+  uploadPrescription: (
+    patientId: string,
+    file: File
+  ): Promise<PrescriptionResponse> => {
+    const form = new FormData();
+    form.append("file", file);
+    return pyPostForm<PrescriptionResponse>(
+      `/api/patients/${patientId}/prescription`,
+      form
+    );
+  },
 };

@@ -28,6 +28,7 @@ from services.risk_agent import RiskAgent
 from services.scribe_workflow import ScribeWorkflowGraph
 from services.report_workflow import ReportWorkflowGraph
 from services.combined_report import CombinedReportService
+from services.prescription_reader import PrescriptionReaderService
 
 import sys
 from pathlib import Path
@@ -55,6 +56,7 @@ risk_agent = RiskAgent()
 scribe_graph = ScribeWorkflowGraph.get_instance()
 report_graph = ReportWorkflowGraph.get_instance()
 combined_report_service = CombinedReportService()
+prescription_reader = PrescriptionReaderService()
 
 # ── FastAPI Application ───────────────────────────────────────────────────────
 app = FastAPI(
@@ -111,6 +113,7 @@ class ScribeStartRequest(BaseModel):
     patient_email: str
     audio_file_path: str
     thread_id: Optional[str] = None
+    stt_provider: str = "sarvam"  # "sarvam" (India) or "elevenlabs" (International)
 
 class ScribeDraftResponse(BaseModel):
     thread_id: str
@@ -154,6 +157,23 @@ class CombinedReportResponse(BaseModel):
     combined_report: str
     dispatch_receipt: Optional[str] = None
     status: str
+
+# Prescription Reader Models
+class PrescriptionMedication(BaseModel):
+    name: str
+    dosage: str
+    frequency: str
+
+class PrescriptionResponse(BaseModel):
+    patient_id: str
+    filename: str
+    raw_ocr_text: str
+    medications: List[PrescriptionMedication]
+    instructions: List[str]
+    prescribing_doctor: str
+    prescription_date: str
+    chunks_stored: int
+    status: str = "DIGITIZED"
 
 
 
@@ -489,6 +509,7 @@ async def start_scribe(body: ScribeStartRequest):
             patient_id=body.patient_id,
             patient_email=body.patient_email,
             audio_file_path=body.audio_file_path,
+            stt_provider=body.stt_provider,
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=f"Audio file not found: {exc}")
@@ -695,6 +716,131 @@ async def generate_combined_report_route(
     )
 
 
+# ── Prescription Reader Endpoint ─────────────────────────────────────────────
+
+@app.post("/api/patients/{patient_id}/prescription", response_model=PrescriptionResponse)
+async def read_prescription(
+    patient_id: str,
+    file: UploadFile = File(...),
+):
+    """
+    Read a doctor's prescription image or PDF using Sarvam AI Document Digitization.
+
+    Pipeline:
+      1. Sarvam OCR  — digitize the prescription (image/PDF → raw text)
+      2. LLM chain   — extract structured medications, dosages, instructions
+      3. ChromaDB    — store result as a patient history chunk
+      4. MongoDB     — fire PRESCRIPTION_OCR telemetry event
+
+    Accepts: JPEG, PNG, PDF (multipart/form-data field name: "file")
+    Max file size: 10 MB
+    """
+    MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+    filename = file.filename or "prescription"
+    content_type = file.content_type or ""
+
+    # Validate file type
+    allowed_exts = {".jpg", ".jpeg", ".png", ".pdf", ".webp", ".tiff", ".tif"}
+    ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in allowed_exts and "image" not in content_type and "pdf" not in content_type:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{ext}'. Accepted: JPEG, PNG, PDF, WEBP, TIFF.",
+        )
+
+    # Read bytes with size guard
+    file_bytes = await file.read()
+    if len(file_bytes) > MAX_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large ({len(file_bytes) // 1024} KB). Maximum allowed is 10 MB.",
+        )
+
+    logger.info(
+        "[Prescription] Reading prescription for patient=%s  file=%s  size=%d bytes",
+        patient_id, filename, len(file_bytes),
+    )
+
+    # Step 1 & 2 — OCR + structured extraction
+    try:
+        result = await prescription_reader.read_prescription(file_bytes, filename)
+    except Exception as exc:
+        logger.error("[Prescription] Reader pipeline failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Prescription reading failed: {exc}")
+
+    raw_ocr_text: str = result.get("raw_ocr_text", "")
+    medications_list: list = result.get("medications_list", [])
+    instructions: List[str] = result.get("general_instructions", [])
+    prescribing_doctor: str = result.get("prescribing_doctor", "Unknown")
+    prescription_date: str = result.get("prescription_date", "Unknown")
+
+    # Build typed medication list from MedicationEntry dicts
+    medications: List[PrescriptionMedication] = [
+        PrescriptionMedication(
+            name=entry.get("drug_name_and_strength", "Unknown") if isinstance(entry, dict) else str(entry),
+            dosage=entry.get("dosage", "") if isinstance(entry, dict) else "",
+            frequency=entry.get("frequency_and_duration", "") if isinstance(entry, dict) else "",
+        )
+        for entry in medications_list
+    ]
+
+    # Step 3 — Store in ChromaDB as a patient history chunk
+    chunks_stored = 0
+    try:
+        prescription_text_chunk = (
+            f"PRESCRIPTION OCR — {filename} — Date: {prescription_date}\n"
+            f"Doctor: {prescribing_doctor}\n\n"
+            f"Raw Prescription Text:\n{raw_ocr_text}\n\n"
+            f"Medications:\n"
+            + "\n".join(
+                f"  - {m.name}: {m.dosage}, {m.frequency}"
+                for m in medications
+            )
+            + (f"\n\nInstructions:\n" + "\n".join(f"  - {i}" for i in instructions) if instructions else "")
+        )
+        chunk_metadata = {
+            "source": "prescription_ocr",
+            "filename": filename,
+            "patient_id": patient_id,
+            "prescribing_doctor": prescribing_doctor,
+            "prescription_date": prescription_date,
+        }
+        chunks = doc_processor.chunk_text(prescription_text_chunk, chunk_metadata)
+        vector_store_service.add_patient_documents(patient_id, chunks)
+        chunks_stored = len(chunks)
+        logger.info(
+            "[Prescription] Stored %d ChromaDB chunks for patient=%s",
+            chunks_stored, patient_id,
+        )
+    except Exception as exc:
+        logger.warning("[Prescription] ChromaDB storage failed (non-fatal): %s", exc)
+
+    # Step 4 — MongoDB telemetry
+    fire_telemetry(
+        event_type="PRESCRIPTION_OCR",
+        payload={
+            "patient_id": patient_id,
+            "filename": filename,
+            "prescribing_doctor": prescribing_doctor,
+            "prescription_date": prescription_date,
+            "medication_count": len(medications),
+            "chunks_stored": chunks_stored,
+            "raw_ocr_preview": raw_ocr_text[:300],
+        },
+    )
+
+    return PrescriptionResponse(
+        patient_id=patient_id,
+        filename=filename,
+        raw_ocr_text=raw_ocr_text,
+        medications=medications,
+        instructions=instructions,
+        prescribing_doctor=prescribing_doctor,
+        prescription_date=prescription_date,
+        chunks_stored=chunks_stored,
+    )
+
+
 # ── Telemetry Endpoint ───────────────────────────────────────────────────────
 
 @app.get("/api/telemetry")
@@ -730,6 +876,7 @@ async def upload_scribe_audio(
     patient_email: str = Form(...),
     audio: UploadFile = File(...),
     thread_id: Optional[str] = Form(None),
+    stt_provider: str = Form("sarvam"),
 ):
     """
     Accept an audio file recorded in the browser (WAV/WebM/MP3),
@@ -747,13 +894,14 @@ async def upload_scribe_audio(
             tmp.write(content)
             tmp_path = tmp.name
 
-        logger.info("[Scribe Upload] Saved audio to %s for patient %s", tmp_path, patient_id)
+        logger.info("[Scribe Upload] Saved audio to %s for patient %s (provider=%s)", tmp_path, patient_id, stt_provider)
 
         state = await scribe_graph.invoke_scribe_pipeline(
             thread_id=thread_id,
             patient_id=patient_id,
             patient_email=patient_email,
             audio_file_path=tmp_path,
+            stt_provider=stt_provider,
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=f"Audio file error: {exc}")

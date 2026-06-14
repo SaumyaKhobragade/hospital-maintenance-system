@@ -120,3 +120,55 @@ async def transcribe_audio_with_sarvam(audio_file_path: str) -> str:
     )
     return transcript
 
+
+# ─── ElevenLabs Transcription Helper (International) ──────────────────────────
+
+async def transcribe_audio_with_elevenlabs(audio_file_path: str) -> str:
+    """
+    Call ElevenLabs speech-to-text (Scribe v2) for international audio.
+    Supports 90+ languages auto-detected from the audio.
+    """
+    if not os.path.isfile(audio_file_path):
+        raise FileNotFoundError(
+            f"Audio file not found at path: {audio_file_path}"
+        )
+
+    if not config.ELEVENLABS_API_KEY:
+        raise RuntimeError(
+            "ELEVENLABS_API_KEY is not set. "
+            "Please configure it in your .env file for international STT."
+        )
+
+    logger.info(
+        "[ELEVENLABS] Transcribing audio file: %s", audio_file_path
+    )
+
+    from elevenlabs.client import ElevenLabs
+
+    client = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
+
+    def _run_transcribe():
+        with open(audio_file_path, "rb") as audio_file:
+            return client.speech_to_text.convert(
+                file=audio_file,
+                model_id=config.ELEVENLABS_STT_MODEL,
+                tag_audio_events=True,
+            )
+
+    try:
+        response = await asyncio.to_thread(_run_transcribe)
+    except Exception as exc:
+        logger.error("[ELEVENLABS] Transcription call failed: %s", exc)
+        raise
+
+    transcript = response.text
+    if not transcript:
+        raise ValueError(
+            f"ElevenLabs returned empty or invalid response: {response}"
+        )
+
+    logger.info(
+        "[ELEVENLABS] Transcription complete. Length=%d chars.", len(transcript)
+    )
+    return transcript
+

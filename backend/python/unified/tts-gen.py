@@ -4,12 +4,12 @@ from pydub import AudioSegment
 import os
 
 dialogue = [
-    ("డాక్టర్: నమస్కారం, మీకు ఏ సమస్య ఉంది?", "te-IN-MohanNeural"),
-    ("डॉक्टर, मला खूप तहान लागते आणि वारंवार लघवीला जावे लागते.", "mr-IN-ManoharNeural"),
-    ("డాక్టర్: ఈ లక్షణాలు మధుమేహానికి సంబంధించినవై ఉండవచ్చు. రక్తంలో చక్కెర పరీక్ష చేయించారా?", "te-IN-MohanNeural"),
-    ("हो डॉक्टर, तपासणीत साखर जास्त असल्याचे सांगितले.", "mr-IN-ManoharNeural"),
-    ("డాక్టర్: సరే. మందులు, సరైన ఆహారం మరియు వ్యాయామంతో దీన్ని నియంత్రించవచ్చు.", "te-IN-MohanNeural"),
-    ("ठीक आहे डॉक्टर, मी तुमच्या सल्ल्याचे पालन करेन.", "mr-IN-ManoharNeural"),
+    ("Médecin : Bonjour, quel est votre problème ?", "fr-FR-HenriNeural"),
+    ("Docteur, j'ai très soif et je vais souvent aux toilettes.", "fr-FR-DeniseNeural"),
+    ("Médecin : Ces symptômes peuvent indiquer un diabète. Avez-vous fait une analyse de glycémie ?", "fr-FR-HenriNeural"),
+    ("Oui docteur, les résultats montrent un taux de sucre élevé.", "fr-FR-DeniseNeural"),
+    ("Médecin : D'accord. Avec des médicaments, une alimentation adaptée et de l'exercice, nous pouvons le contrôler.", "fr-FR-HenriNeural"),
+    ("Merci docteur, je suivrai vos conseils.", "fr-FR-DeniseNeural"),
 ]
 
 async def generate_audio():
@@ -30,7 +30,7 @@ async def generate_audio():
         combined += audio
         combined += AudioSegment.silent(duration=300)
 
-    combined.export("doctor_patient.wav", format="wav")
+    combined.export("diabetes_french_conversation.wav", format="wav")
 
     for i in range(len(dialogue)):
         try:
@@ -38,6 +38,6 @@ async def generate_audio():
         except:
             pass
 
-    print("Saved as diabetes_conversation.wav")
+    print("Saved as diabetes_french_conversation.wav")
 
 asyncio.run(generate_audio())

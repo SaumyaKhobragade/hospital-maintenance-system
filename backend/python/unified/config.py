@@ -42,6 +42,14 @@ SARVAM_STT_URL: str = "https://api.sarvam.ai/speech-to-text"
 SARVAM_STT_MODEL: str = "saaras:v3"
 SARVAM_LANGUAGE_CODE: str = "unknown"  # auto-detect: works for Hindi, English, Hinglish, etc.
 
+# ─── Sarvam Document Digitization (Prescription OCR) ─────────────────────────
+SARVAM_OCR_URL: str = "https://api.sarvam.ai/parse-document"
+SARVAM_OCR_MODEL: str = "document-ocr"
+
+# ─── ElevenLabs Speech-to-Text (International) ───────────────────────────────
+ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_STT_MODEL: str = "scribe_v2"
+
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")

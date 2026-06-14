@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { RefreshCw, AlertTriangle, MapPin, Clock, ShieldCheck, ChevronRight, Play, Camera, Loader2, Info } from "lucide-react";
 import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
 import { supabase } from "../../../lib/supabaseClient";
-import { analyzeLocalVideo, getDistressEvents, DistressEvent } from "../../../lib/api/video";
+import { analyzeLocalVideo, getDistressEvents, DistressEvent, PYTHON_API } from "../../../lib/api/video";
 
 interface UnifiedAlert {
   id: string;
@@ -277,14 +277,27 @@ export default function Alerts() {
           {selected ? (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="aspect-video bg-slate-900 relative">
-                <ImageWithFallback src={selectedVideo?.previewUrl || SAMPLE_VIDEOS[3].previewUrl} alt="" className="w-full h-full object-cover opacity-70" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <button className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-2xl"><Play className="w-7 h-7 text-slate-900 ml-1" /></button>
-                </div>
-                <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500 text-white text-xs">
+                {selectedVideo ? (
+                  <video
+                    src={`${PYTHON_API}/static/videos/${selectedVideo.path.split("/").pop()}`}
+                    className="w-full h-full object-contain"
+                    controls
+                    autoPlay
+                    loop
+                    muted
+                  />
+                ) : (
+                  <>
+                    <ImageWithFallback src={SAMPLE_VIDEOS[3].previewUrl} alt="" className="w-full h-full object-cover opacity-70" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <button className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-2xl"><Play className="w-7 h-7 text-slate-900 ml-1" /></button>
+                    </div>
+                  </>
+                )}
+                <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500 text-white text-xs z-10">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE · WAITING_AREA_CCTV
                 </div>
-                <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 text-white text-xs">
+                <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 text-white text-xs bg-black/40 px-2 py-1 rounded w-fit z-10">
                   <Camera className="w-3.5 h-3.5" /> {selected.hospital}
                 </div>
               </div>

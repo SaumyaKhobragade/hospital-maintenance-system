@@ -26,6 +26,7 @@ import {
   Upload,
   FileAudio,
   X,
+  Globe,
 } from "lucide-react";
 import { pythonApi, ScribeDraftResponse } from "@/lib/pythonApi";
 
@@ -40,6 +41,7 @@ type RecordingState = "idle" | "recording" | "processing" | "done" | "error";
 export default function VoiceCheckInKioskPage() {
   const [selectedPreset, setSelectedPreset] = useState(PATIENT_PRESETS[0]);
   const [uploadMode, setUploadMode] = useState<"record" | "upload">("record");
+  const [region, setRegion] = useState<"india" | "international">("india");
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [waveformBars, setWaveformBars] = useState<number[]>(Array(24).fill(10));
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -175,6 +177,8 @@ export default function VoiceCheckInKioskPage() {
     }
   };
 
+  const sttProvider = region === "india" ? "sarvam" : "elevenlabs";
+
   const uploadAndProcess = async (blob: Blob, filename?: string) => {
     try {
       const ext = filename
@@ -184,7 +188,8 @@ export default function VoiceCheckInKioskPage() {
         selectedPreset.id,
         selectedPreset.email,
         blob,
-        filename ?? `recording.${ext}`
+        filename ?? `recording.${ext}`,
+        sttProvider
       );
       setDraft(result);
       setRecordingState("done");
@@ -258,9 +263,13 @@ export default function VoiceCheckInKioskPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              Sarvam STT · Ambient Clinical Scribe
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+              region === "india"
+                ? "bg-blue-50 text-blue-700 border-blue-100"
+                : "bg-purple-50 text-purple-700 border-purple-100"
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${region === "india" ? "bg-blue-500" : "bg-purple-500"}`} />
+              {region === "india" ? "Sarvam STT" : "ElevenLabs Scribe"} · Ambient Clinical Scribe
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
               LangGraph Workflow
@@ -330,12 +339,55 @@ export default function VoiceCheckInKioskPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Region Toggle */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+              region === "india" ? "bg-orange-50 border border-orange-100" : "bg-purple-50 border border-purple-100"
+            }`}>
+              <Globe className={`w-4.5 h-4.5 ${region === "india" ? "text-orange-600" : "text-purple-600"}`} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-slate-800">Voice Region</div>
+              <div className="text-xs text-slate-500">
+                {region === "india"
+                  ? "Using Sarvam AI — optimised for Indian languages (Hindi, English, Hinglish)"
+                  : "Using ElevenLabs Scribe — 90+ international languages auto-detected"}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-0.5">
+            <button
+              onClick={() => setRegion("india")}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                region === "india"
+                  ? "bg-white text-orange-700 shadow-sm border border-orange-100"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              🇮🇳 India
+            </button>
+            <button
+              onClick={() => setRegion("international")}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                region === "international"
+                  ? "bg-white text-purple-700 shadow-sm border border-purple-100"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              🌍 International
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           { label: "Active Patient", value: selectedPreset.id, icon: User, iconBg: "bg-blue-50 text-blue-600 border border-blue-100" },
-          { label: "Scribe Model", value: "Sarvam v3", icon: Languages, iconBg: "bg-emerald-50 text-emerald-600 border border-emerald-100" },
+          { label: "STT Engine", value: region === "india" ? "Sarvam v3" : "ElevenLabs Scribe", icon: Languages, iconBg: region === "india" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-purple-50 text-purple-600 border border-purple-100" },
           { label: "Recording Status", value: recordingState.charAt(0).toUpperCase() + recordingState.slice(1), icon: Activity, iconBg: "bg-violet-50 text-violet-600 border border-violet-100" },
-          { label: "Pipeline", value: "LangGraph", icon: Award, iconBg: "bg-amber-50 text-amber-600 border border-amber-100" },
         ].map((stat, i) => {
           const Icon = stat.icon;
           return (
@@ -364,7 +416,7 @@ export default function VoiceCheckInKioskPage() {
             <div className="flex items-center justify-between w-full border-b border-slate-50 pb-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Capture Terminal</span>
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                SARVAM-STT
+                {region === "india" ? "SARVAM-STT" : "ELEVENLABS-STT"}
               </span>
             </div>
 
@@ -429,7 +481,7 @@ export default function VoiceCheckInKioskPage() {
                   <span className="text-xs text-slate-400">
                     {recordingState === "recording"
                       ? `Recording: ${formatTimer(timerSeconds)}`
-                      : "Speaks any language · auto-detected by Sarvam AI"}
+                      : region === "india" ? "Speaks any language · auto-detected by Sarvam AI" : "90+ languages · auto-detected by ElevenLabs Scribe"}
                   </span>
                 </div>
 
@@ -523,7 +575,7 @@ export default function VoiceCheckInKioskPage() {
                 {recordingState === "processing" ? (
                   <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-500 text-sm font-semibold">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Sarvam AI transcribing…
+                    {region === "india" ? "Sarvam AI" : "ElevenLabs"} transcribing…
                   </div>
                 ) : (
                   <button
@@ -538,7 +590,7 @@ export default function VoiceCheckInKioskPage() {
                 )}
 
                 <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                  The file is sent to Sarvam AI for transcription, then structured as a SOAP note and indexed in ChromaDB for the combined report.
+                  The file is sent to {region === "india" ? "Sarvam AI" : "ElevenLabs"} for transcription, then structured as a SOAP note and indexed in ChromaDB for the combined report.
                 </p>
               </div>
             )}
@@ -578,7 +630,7 @@ export default function VoiceCheckInKioskPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">STT Engine</span>
-                <span className="font-semibold text-slate-700">Sarvam saaras:v3</span>
+                <span className="font-semibold text-slate-700">{region === "india" ? "Sarvam saaras:v3" : "ElevenLabs Scribe v2"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Report Engine</span>
@@ -606,7 +658,7 @@ export default function VoiceCheckInKioskPage() {
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-semibold text-slate-900">Running Clinical Scribe Pipeline</p>
                   <p className="text-xs text-slate-500 font-mono">
-                    Upload → Sarvam STT → SOAP structuring → Patient report draft…
+                    Upload → {region === "india" ? "Sarvam STT" : "ElevenLabs STT"} → SOAP structuring → Patient report draft…
                   </p>
                 </div>
                 <div className="w-56 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -630,13 +682,13 @@ export default function VoiceCheckInKioskPage() {
                 </span>
                 <span className="text-sm text-slate-400 max-w-xs">
                   {uploadMode === "upload"
-                    ? "Upload a .wav recording of a doctor-patient session. Sarvam AI will transcribe, structure, and draft a report."
+                    ? `Upload a .wav recording of a doctor-patient session. ${region === "india" ? "Sarvam AI" : "ElevenLabs"} will transcribe, structure, and draft a report.`
                     : "Click the microphone to start recording a doctor-patient conversation. The AI will transcribe, structure, and draft a report."}
                 </span>
               </div>
               <div className="flex flex-col gap-2 text-xs text-slate-400 mt-2">
                 {[
-                  "Sarvam STT auto-detects any spoken language",
+                  region === "india" ? "Sarvam STT auto-detects any spoken language" : "ElevenLabs Scribe supports 90+ languages",
                   "Generates structured SOAP note automatically",
                   "Indexed in ChromaDB · available in Combined Report",
                   "Doctor approval dispatches the report by email",
@@ -684,7 +736,7 @@ export default function VoiceCheckInKioskPage() {
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 max-h-[150px] overflow-y-auto">
                     <p className="text-xs leading-relaxed text-slate-700 italic font-medium">
-                      {draft.raw_transcript || "No transcript returned (Sarvam may have used mock fallback)."}
+                      {draft.raw_transcript || "No transcript returned from STT engine."}
                     </p>
                   </div>
                 </div>
