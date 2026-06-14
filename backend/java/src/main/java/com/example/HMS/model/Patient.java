@@ -1,6 +1,7 @@
 package com.example.HMS.model;
 
 import com.example.HMS.service.TriagePolicyService;
+import jakarta.persistence.*;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -9,18 +10,37 @@ import java.util.concurrent.atomic.AtomicReference;
  * Patient model — Lombok removed for JDK 26 compatibility.
  * Priority calculated dynamically based on severity, wait time, and distress.
  */
+@Entity
+@Table(name = "patients")
 public class Patient implements Comparable<Patient> {
 
+    @Id
+    @Column(name = "id")
     private String id = UUID.randomUUID().toString();
+
+    @Column(name = "base_severity")
     private int baseSeverity; // 1-10
+
+    @Column(name = "arrival_time")
     private long arrivalTime;
+
+    @Column(name = "target_hospital_id")
     private String targetHospitalId;
+
+    @Transient
     private AtomicInteger distressScore = new AtomicInteger(0);
+
+    @Transient
     private AtomicReference<DistressStatus> distressStatus = new AtomicReference<>(DistressStatus.NONE);
+
+    @Column(name = "distress_event_timestamp")
     private long distressEventTimestamp = 0;
+
+    @Column(name = "treating")
     private boolean treating = false;
 
     // Global Policy Service Reference (injected by HospitalService)
+    @Transient
     public static TriagePolicyService policyService;
 
     // ─── Explicit Builder ────────────────────────────────────────────────────

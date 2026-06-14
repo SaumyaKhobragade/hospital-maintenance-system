@@ -1,16 +1,23 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 const FragmentRow = Fragment;
 import { Download, RefreshCw, Search, ChevronDown, ChevronRight, Route, Flag } from "lucide-react";
 
-const decisions = [
-  { id: "D-9821", patient: "PT-8421", from: "Central", to: "Eastern", type: "Safe", reason: "Capacity overflow", time: "2m ago", status: "Applied", confidence: 92, policy: "Adaptive v2.4" },
-  { id: "D-9820", patient: "PT-8420", from: "Riverside", to: "Northgate", type: "Conditional", reason: "Specialty match", time: "4m ago", status: "Applied", confidence: 78, policy: "Adaptive v2.4" },
-  { id: "D-9819", patient: "PT-8418", from: "Central", to: "Westside", type: "Standard", reason: "Wait optimization", time: "6m ago", status: "Pending", confidence: 64, policy: "Adaptive v2.4" },
-  { id: "D-9818", patient: "PT-8415", from: "Northgate", to: "Central", type: "Safe", reason: "ICU capacity", time: "11m ago", status: "Applied", confidence: 88, policy: "Adaptive v2.4" },
-  { id: "D-9817", patient: "PT-8412", from: "Eastern", to: "Riverside", type: "Standard", reason: "Distance", time: "18m ago", status: "Rejected", confidence: 41, policy: "Strict FIFO" },
-];
+import { supabase } from "../../../lib/supabaseClient";
+
+interface Decision {
+  id: string;
+  patient: string;
+  from: string;
+  to: string;
+  type: string;
+  reason: string;
+  time: string;
+  status: string;
+  confidence: number;
+  policy: string;
+}
 
 const typeColor: Record<string, string> = {
   Safe: "bg-emerald-50 text-emerald-700 border-emerald-100",
@@ -25,6 +32,30 @@ const statusColor: Record<string, string> = {
 };
 
 export default function DecisionMonitor() {
+  const [decisions, setDecisions] = useState<Decision[]>([]);
+
+  const fetchDecisions = async () => {
+    const { data } = await supabase.from("clinical_decisions").select("*").limit(50);
+    if (data) {
+      const mapped = data.map((d: any) => ({
+        id: "D-" + d.id.substring(0, 4),
+        patient: "PT-" + (d.patient_id?.substring(0, 4) || "Unknown"),
+        from: d.from_hospital || "Unknown",
+        to: d.to_hospital || "Unknown",
+        type: d.type || "Standard",
+        reason: d.reason || "Unknown reason",
+        time: d.created_at ? new Date(d.created_at).toLocaleTimeString() : "Just now",
+        status: d.status || "Pending",
+        confidence: d.confidence || 0,
+        policy: d.policy_used || "Unknown"
+      }));
+      setDecisions(mapped);
+    }
+  };
+
+  useEffect(() => {
+    fetchDecisions();
+  }, []);
   const [expanded, setExpanded] = useState<string | null>("D-9821");
 
   return (
@@ -36,7 +67,7 @@ export default function DecisionMonitor() {
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"><Download className="w-4 h-4" /> Export Log</button>
-          <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm"><RefreshCw className="w-4 h-4" /> Live Refresh</button>
+          <button onClick={fetchDecisions} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm"><RefreshCw className="w-4 h-4" /> Live Refresh</button>
         </div>
       </div>
 

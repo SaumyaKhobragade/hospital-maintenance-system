@@ -3,6 +3,8 @@ package com.example.HMS.service;
 import com.example.HMS.model.Department;
 import com.example.HMS.model.Hospital;
 import com.example.HMS.model.Patient;
+import com.example.HMS.repository.HospitalRepository;
+import com.example.HMS.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,12 +33,16 @@ public class HospitalService {
     private final SurgeDetectorService surgeDetectorService;
     private final SseService sseService;
     private final TriagePolicyService triagePolicyService;
+    private final HospitalRepository hospitalRepository;
+    private final PatientRepository patientRepository;
 
     @Autowired
-    public HospitalService(SurgeDetectorService surgeDetectorService, SseService sseService, TriagePolicyService triagePolicyService) {
+    public HospitalService(SurgeDetectorService surgeDetectorService, SseService sseService, TriagePolicyService triagePolicyService, HospitalRepository hospitalRepository, PatientRepository patientRepository) {
         this.surgeDetectorService = surgeDetectorService;
         this.sseService = sseService;
         this.triagePolicyService = triagePolicyService;
+        this.hospitalRepository = hospitalRepository;
+        this.patientRepository = patientRepository;
 
         // Inject global policy into Patient model
         Patient.policyService = triagePolicyService;
@@ -63,6 +69,11 @@ public class HospitalService {
         initDepartment(hospital, Department.ICU, 2); // 2 ICU Specialists
 
         cityHospitals.put(id, hospital);
+        try {
+            hospitalRepository.save(hospital);
+        } catch (Exception e) {
+            System.err.println("DB Save Hospital Error: " + e.getMessage());
+        }
         return hospital;
     }
 
@@ -193,6 +204,12 @@ public class HospitalService {
             h.getWaitingRooms().get(targetDept).offer(p);
             System.out.println("Admitted " + p.getId() + " to " + hospitalId + " -> " + targetDept + " Queue | "
                     + "Severity: " + p.getSeverity());
+                    
+            try {
+                patientRepository.save(p);
+            } catch (Exception e) {
+                System.err.println("DB Save Patient Error: " + e.getMessage());
+            }
         }
     }
 

@@ -1,12 +1,28 @@
 package com.example.HMS.model;
 
+import jakarta.persistence.*;
+import java.util.UUID;
+
 /**
  * Represents a distress event reported for a patient.
  */
+@Entity
+@Table(name = "distress_events")
 public class DistressEvent {
+    @Id
+    @Column(name = "id")
+    private String id = UUID.randomUUID().toString();
+
+    @Column(name = "patient_id")
     private String patientId;
+
+    @Column(name = "type")
     private String type; // e.g., "COLLAPSE", "VOMITING", "IMMOBILITY"
+
+    @Column(name = "confidence")
     private double confidence; // 0.0 to 1.0
+
+    @Column(name = "event_timestamp")
     private long timestamp;
 
     public DistressEvent() {}

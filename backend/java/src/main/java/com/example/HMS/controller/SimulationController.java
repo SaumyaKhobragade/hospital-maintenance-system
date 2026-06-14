@@ -13,6 +13,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+import com.example.HMS.service.PatientPersistenceService;
 import java.util.Random;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,7 @@ public class SimulationController {
     private final OrchestratorService orchestratorService;
     private final SseService sseService;
     private final com.example.HMS.service.DistressService distressService;
+    private final PatientPersistenceService patientPersistenceService;
     private final OkHttpClient httpClient;
     private final Random random = new Random();
 
@@ -40,11 +42,13 @@ public class SimulationController {
     @Autowired
     public SimulationController(HospitalService hospitalService, OrchestratorService orchestratorService,
             SseService sseService,
-            com.example.HMS.service.DistressService distressService) {
+            com.example.HMS.service.DistressService distressService,
+            PatientPersistenceService patientPersistenceService) {
         this.hospitalService = hospitalService;
         this.orchestratorService = orchestratorService;
         this.sseService = sseService;
         this.distressService = distressService;
+        this.patientPersistenceService = patientPersistenceService;
         this.httpClient = new OkHttpClient();
     }
 
@@ -141,6 +145,7 @@ public class SimulationController {
                 .build();
 
         hospitalService.admitPatient(hospitalId, p);
+        patientPersistenceService.savePatientAsync(p);
 
         // Broadcast patient admission event
         Map<String, Object> event = new HashMap<>();
@@ -199,6 +204,7 @@ public class SimulationController {
                     .arrivalTime(java.time.Instant.now().toEpochMilli())
                     .build();
             hospitalService.admitPatient(hId, p);
+            patientPersistenceService.savePatientAsync(p);
 
         }
 
@@ -294,6 +300,7 @@ public class SimulationController {
                         .arrivalTime(java.time.Instant.now().toEpochMilli())
                         .build();
                 hospitalService.admitPatient(hospitalId, p);
+                patientPersistenceService.savePatientAsync(p);
                 totalPatients++;
             }
         }
@@ -368,6 +375,7 @@ public class SimulationController {
                     .arrivalTime(java.time.Instant.now().toEpochMilli())
                     .build();
             hospitalService.admitPatient(hId, p);
+            patientPersistenceService.savePatientAsync(p);
         }
         for (int i = 0; i < 200; i++) {
             String hId = "H7";
@@ -377,6 +385,7 @@ public class SimulationController {
                     .arrivalTime(java.time.Instant.now().toEpochMilli())
                     .build();
             hospitalService.admitPatient(hId, p);
+            patientPersistenceService.savePatientAsync(p);
 
         }
         return "Redirect Surge initialized.";

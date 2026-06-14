@@ -1,6 +1,7 @@
 package com.example.HMS.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Deque;
@@ -14,24 +15,41 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Hospital model — Lombok removed for JDK 26 compatibility.
  * Uses explicit builder pattern, getters/setters.
  */
+@Entity
+@Table(name = "hospitals")
 public class Hospital {
+    @Id
+    @Column(name = "id")
     private String id;
+
+    @Column(name = "name")
     private String name;
+
+    @Column(name = "max_capacity")
     private int maxCapacity;
+
+    @Column(name = "x")
     private int x;
+
+    @Column(name = "y")
     private int y;
 
+    @Transient
     @JsonIgnore
     private Map<Department, PriorityBlockingQueue<Patient>> waitingRooms = new ConcurrentHashMap<>();
 
+    @Transient
     @JsonIgnore
     private Map<Department, ThreadPoolExecutor> departmentalStaff = new ConcurrentHashMap<>();
 
+    @Transient
     @JsonIgnore
     private Map<Department, Deque<AtomicBoolean>> staffControl = new ConcurrentHashMap<>();
 
+    @Transient
     private Map<Department, Integer> baselineStaffCount = new ConcurrentHashMap<>();
 
+    @Transient
     private AtomicInteger activeTreatments = new AtomicInteger(0);
 
     // ─── Explicit Builder ─────────────────────────────────────────────────────

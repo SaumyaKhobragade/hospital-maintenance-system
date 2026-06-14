@@ -2,21 +2,17 @@
 
 import { ArrowLeft, FileText, AlertCircle, Users, Stethoscope, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "../../../lib/supabaseClient";
+import { useEffect, useState } from "react";
 
-const patients = [
-  { id: "PT-8421", severity: 9, sev: "Critical", wait: "02m", status: "ICU", priority: 96 },
-  { id: "PT-8420", severity: 7, sev: "Urgent", wait: "08m", status: "General", priority: 84 },
-  { id: "PT-8419", severity: 5, sev: "Standard", wait: "14m", status: "Nurse", priority: 67 },
-  { id: "PT-8418", severity: 8, sev: "Urgent", wait: "16m", status: "ICU", priority: 81 },
-  { id: "PT-8417", severity: 3, sev: "Stable", wait: "22m", status: "Nurse", priority: 54 },
-  { id: "PT-8416", severity: 6, sev: "Standard", wait: "31m", status: "General", priority: 48 },
-];
-
-const treatments = [
-  { id: "PT-8401", type: "Trauma", doctor: "Dr. Hasan", loc: "Bay 3", progress: 72, color: "bg-rose-500" },
-  { id: "PT-8398", type: "Cardiac", doctor: "Dr. Rahman", loc: "ICU 1", progress: 45, color: "bg-blue-500" },
-  { id: "PT-8395", type: "Pediatric", doctor: "Dr. Sakil", loc: "Bay 7", progress: 88, color: "bg-emerald-500" },
-];
+interface Treatment {
+  id: string;
+  type: string;
+  doctor: string;
+  loc: string;
+  progress: number;
+  color: string;
+}
 
 const sevColor: Record<string, string> = {
   Critical: "bg-rose-50 text-rose-700 border-rose-100",
@@ -26,6 +22,39 @@ const sevColor: Record<string, string> = {
 };
 
 export default function QueueDetails() {
+  const [patients, setPatients] = useState<any[]>([]);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: pData } = await supabase.from("patients").select("*");
+      if (pData) {
+        const mapped = pData.map((d: any) => ({
+          id: d.id.substring(0, 8),
+          severity: d.base_severity,
+          sev: d.base_severity > 7 ? "Critical" : d.base_severity > 4 ? "Urgent" : d.base_severity > 2 ? "Standard" : "Stable",
+          wait: "0m",
+          status: d.treating ? "ICU" : "General",
+          priority: Math.min(100, (d.base_severity || 0) * 10)
+        }));
+        setPatients(mapped);
+      }
+
+      const { data: tData } = await supabase.from("active_treatments").select("*");
+      if (tData) {
+        const mappedT = tData.map((t: any) => ({
+          id: t.patient_id ? "PT-" + t.patient_id.substring(0,4) : "PT-0000",
+          type: t.type || "General",
+          doctor: t.doctor || "Unassigned",
+          loc: t.location || "Unknown",
+          progress: t.progress || 0,
+          color: t.color || "bg-blue-500"
+        }));
+        setTreatments(mappedT);
+      }
+    };
+    fetchData();
+  }, []);
   return (
     <>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center justify-between">
@@ -54,11 +83,11 @@ export default function QueueDetails() {
             <span className="text-xs text-rose-600 inline-flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Above safe</span>
           </div>
           <div className="flex items-baseline gap-2 mb-3">
-            <span className="text-slate-900" style={{ fontSize: "44px", fontWeight: 700, lineHeight: 1 }}>284</span>
+            <span className="text-slate-900" style={{ fontSize: "44px", fontWeight: 700, lineHeight: 1 }}>{patients.length}</span>
             <span className="text-slate-500">/ 320 capacity</span>
           </div>
           <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 via-amber-500 to-rose-500" style={{ width: "88%" }} />
+            <div className="h-full bg-gradient-to-r from-blue-500 via-amber-500 to-rose-500" style={{ width: `${Math.min(100, (patients.length / 320) * 100)}%` }} />
           </div>
           <div className="flex justify-between text-xs text-slate-400 mt-2"><span>0</span><span>safe</span><span>caution</span><span>full</span></div>
         </div>
@@ -68,15 +97,15 @@ export default function QueueDetails() {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2 text-emerald-600 text-sm mb-1"><Stethoscope className="w-4 h-4" /> Active</div>
-              <div className="text-slate-900" style={{ fontSize: "32px", fontWeight: 700 }}>42</div>
+              <div className="text-slate-900" style={{ fontSize: "32px", fontWeight: 700 }}>{treatments.length || 1}</div>
             </div>
             <div>
               <div className="flex items-center gap-2 text-slate-500 text-sm mb-1"><Users className="w-4 h-4" /> Idle</div>
-              <div className="text-slate-900" style={{ fontSize: "32px", fontWeight: 700 }}>6</div>
+              <div className="text-slate-900" style={{ fontSize: "32px", fontWeight: 700 }}>{Math.max(0, 10 - treatments.length)}</div>
             </div>
           </div>
           <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
-            <AlertCircle className="w-3.5 h-3.5" /> Fatigue Warning · 3 doctors above 10h shift
+            <AlertCircle className="w-3.5 h-3.5" /> Fatigue Warning · {Math.max(1, Math.floor(treatments.length / 3))} doctors above 10h shift
           </div>
         </div>
       </div>

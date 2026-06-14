@@ -57,86 +57,7 @@ interface RAGTemplate {
   };
 }
 
-const ragTemplates: RAGTemplate[] = [
-  {
-    id: "T1",
-    name: "Template: Cardiac Rx",
-    fileName: "rx_cardiac_jenkins.pdf",
-    ocrText: "Rx: Lisinopril 20mg once daily. Metformin 1000mg twice daily. Atorvastatin 40mg once daily. Ibuprofen 400mg as needed.",
-    extractedFields: {
-      medications: [
-        { name: "Lisinopril", dosage: "20mg daily" },
-        { name: "Metformin", dosage: "1000mg twice daily" },
-        { name: "Atorvastatin", dosage: "40mg daily" },
-        { name: "Ibuprofen", dosage: "400mg as needed" }
-      ],
-      diagnosis: "Stage-II Hypertension & Type 2 Diabetes",
-      doctorNotes: "Monitor BP twice daily. Review renal clearance profiles next visit.",
-      allergies: ["Penicillin", "Sulfa drugs"]
-    },
-    embeddingMetrics: {
-      latency: "42ms",
-      chunkCount: 3,
-      vectorDims: 1536
-    },
-    retrievedChunks: [
-      {
-        id: "CH-8802",
-        source: "Cardiology EMR (Jan 2026)",
-        text: "Patient admitted with hypertensive crisis. Blood pressure reached 180/110 mmHg. Confirmed patient history of chronic renal stress. Prescribed Lisinopril 20mg.",
-        similarity: 0.92,
-        medOverlap: ["Lisinopril 20mg"]
-      },
-      {
-        id: "CH-8803",
-        source: "Outpatient Clinic Log (Sep 2025)",
-        text: "Metformin dosage adjusted to 1000mg twice daily due to rising HbA1c (8.2%). Diabetic peripheral neuropathy monitoring advised.",
-        similarity: 0.85,
-        medOverlap: ["Metformin 1000mg"]
-      }
-    ],
-    aiSummary: {
-      summary: "High similarity match with Jan 2026 hypertensive crisis. Recent scan includes Metformin and Ibuprofen (NSAID) which introduces critical drug interaction risk in a patient with stage 2 kidney disease.",
-      patterns: ["Recurrent blood pressure spikes on admission", "Renal filtration stress under NSAID use"],
-      alerts: ["DRUG INTERACTION: Metformin + Ibuprofen in renal compromise", "CARDIOVASCULAR RISK: History of left ventricular hypertrophy"]
-    }
-  },
-  {
-    id: "T2",
-    name: "Template: Asthma Rx",
-    fileName: "rx_asthma_chen.pdf",
-    ocrText: "Rx: Propranolol 40mg daily. Albuterol HFA 2 puffs q4h prn. Fluticasone/Salmeterol 250/50 mcg twice daily.",
-    extractedFields: {
-      medications: [
-        { name: "Propranolol", dosage: "40mg daily" },
-        { name: "Albuterol HFA", dosage: "2 puffs q4h prn" },
-        { name: "Fluticasone/Salmeterol", dosage: "250/50 mcg twice daily" }
-      ],
-      diagnosis: "Severe Persistent Asthma & Allergic Rhinitis",
-      doctorNotes: "Check spirometry parameters. Monitor inhaler technique.",
-      allergies: ["Aspirin"]
-    },
-    embeddingMetrics: {
-      latency: "38ms",
-      chunkCount: 2,
-      vectorDims: 1536
-    },
-    retrievedChunks: [
-      {
-        id: "CH-7742",
-        source: "Intensive Care Records (Aug 2024)",
-        text: "Patient admitted for status asthmaticus. Required mechanical ventilation for 24 hours. Sensitivities to non-selective beta-blockers noted.",
-        similarity: 0.95,
-        medOverlap: ["Albuterol", "Beta-blockers"]
-      }
-    ],
-    aiSummary: {
-      summary: "95% similarity match with Riverside ICU ventilation incident. Current scan contains Propranolol (non-selective beta-blocker), which is strictly contraindicated due to bronchial spasm risk.",
-      patterns: ["Severe bronchospasm episodes", "Prior mechanical ventilation history"],
-      alerts: ["CONTRAINDICATION: Propranolol prescribed to severe asthmatic patient"]
-    }
-  }
-];
+import { supabase } from "../../../lib/supabaseClient";
 
 interface SimilarityRecord {
   id: string;
@@ -148,21 +69,50 @@ interface SimilarityRecord {
   confidence: number;
 }
 
-const mockSearchRecords: SimilarityRecord[] = [
-  { id: "REC-4409", patientId: "PT-9042", matchType: "Hypertension History", score: 92, source: "Central Hospital EMR", timestamp: "Just now", confidence: 96 },
-  { id: "REC-4408", patientId: "PT-7719", matchType: "ICU Intubation History", score: 95, source: "Riverside ICU", timestamp: "3m ago", confidence: 98 },
-  { id: "REC-4407", patientId: "PT-5521", matchType: "Nephropathy eGFR Decline", score: 91, source: "State Renal Institute", timestamp: "7m ago", confidence: 93 },
-  { id: "REC-4406", patientId: "PT-9042", matchType: "Diabetes Outpatient Log", score: 85, source: "Metropolitan Clinic", timestamp: "12m ago", confidence: 94 }
-];
-
 export default function RAGHistoryPage() {
-  const [activeTemplateId, setActiveTemplateId] = useState<string>("T1");
+  const [ragTemplates, setRagTemplates] = useState<RAGTemplate[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [pipelineProgress, setPipelineProgress] = useState<number>(100);
   const [pipelineStep, setPipelineStep] = useState<string>("Ready");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [tableRecords, setTableRecords] = useState<SimilarityRecord[]>(mockSearchRecords);
-  const [selectedRecordId, setSelectedRecordId] = useState<string>("REC-4409");
+  const [tableRecords, setTableRecords] = useState<SimilarityRecord[]>([]);
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: templates } = await supabase.from("rag_templates").select("*");
+      if (templates) {
+        const mapped = templates.map((t: any) => ({
+          id: t.id,
+          name: t.name || "Template",
+          fileName: t.file_name || "Unknown",
+          ocrText: t.ocr_text || "",
+          extractedFields: t.extracted_fields || { medications: [], diagnosis: "", doctorNotes: "", allergies: [] },
+          embeddingMetrics: t.embedding_metrics || { latency: "0ms", chunkCount: 0, vectorDims: 0 },
+          retrievedChunks: t.ai_summary?.chunks || [],
+          aiSummary: t.ai_summary || { summary: "", patterns: [], alerts: [] }
+        }));
+        setRagTemplates(mapped);
+        if (mapped.length > 0) setActiveTemplateId(mapped[0].id);
+      }
+      const { data: records } = await supabase.from("rag_similarity_records").select("*");
+      if (records) {
+        const mappedRecs = records.map((r: any) => ({
+          id: r.id,
+          patientId: r.patient_id || "Unknown",
+          matchType: r.match_type || "General",
+          score: r.score || 0,
+          source: r.source || "Unknown",
+          timestamp: r.record_timestamp || r.created_at || "Just now",
+          confidence: r.confidence || 0
+        }));
+        setTableRecords(mappedRecs);
+        if (mappedRecs.length > 0) setSelectedRecordId(mappedRecs[0].id);
+      }
+    };
+    fetchData();
+  }, []);
 
   const activeTemplate = ragTemplates.find((t) => t.id === activeTemplateId) || ragTemplates[0];
 
@@ -336,16 +286,18 @@ export default function RAGHistoryPage() {
           >
             {/* Left Column: Upload widget, extraction checklist */}
             <div className="lg:col-span-1 flex flex-col gap-5">
-              {/* 3. Prescription Upload & OCR Section */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col gap-4">
-                <span className="text-sm font-semibold text-slate-900 border-b border-slate-50 pb-2 block">
-                  Drag & Drop Prescription Ingest
-                </span>
+              {activeTemplate && (
+                <>
+                  {/* 3. Prescription Upload & OCR Section */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col gap-4">
+                    <span className="text-sm font-semibold text-slate-900 border-b border-slate-50 pb-2 block">
+                      Drag & Drop Prescription Ingest
+                    </span>
 
-                <div className="border border-dashed border-slate-200 bg-slate-50 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:bg-slate-100/50 transition">
+                    <div className="border border-dashed border-slate-200 bg-slate-50 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:bg-slate-100/50 transition">
                   <UploadCloud className="w-8 h-8 text-slate-400" />
                   <div className="flex flex-col gap-0.5 text-xs">
-                    <span className="font-semibold text-slate-800">{activeTemplate.fileName}</span>
+                    <span className="font-semibold text-slate-800">{activeTemplate?.fileName}</span>
                     <span className="text-slate-400">PDF / Image uploaded successfully</span>
                   </div>
                 </div>
@@ -439,7 +391,9 @@ export default function RAGHistoryPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </>
+          )}
+        </div>
 
             {/* Center & Right Column combined layout */}
             <div className="lg:col-span-2 flex flex-col gap-5">

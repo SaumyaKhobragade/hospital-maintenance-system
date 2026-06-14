@@ -111,6 +111,56 @@ CREATE TABLE telemetry_events (
 );
 
 -- ==========================================
+-- 7. Clinical Decisions Table
+-- ==========================================
+CREATE TABLE clinical_decisions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+    from_hospital TEXT,
+    to_hospital TEXT,
+    type TEXT,
+    reason TEXT,
+    status TEXT,
+    confidence INTEGER,
+    policy_used TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================
+-- 8. Active Treatments Table
+-- ==========================================
+CREATE TABLE active_treatments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+    type TEXT,
+    doctor TEXT,
+    location TEXT,
+    progress INTEGER,
+    color TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================
+-- 9. Hospital Policies Table
+-- ==========================================
+CREATE TABLE hospital_policies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT,
+    description TEXT,
+    active BOOLEAN DEFAULT FALSE,
+    severity_weight FLOAT DEFAULT 1.0,
+    aging_factor FLOAT DEFAULT 0.5,
+    aging_enabled INTEGER DEFAULT 1,
+    distress_provisional_boost INTEGER DEFAULT 50,
+    distress_confirmed_boost INTEGER DEFAULT 100,
+    distress_provisional_timeout_ms INTEGER DEFAULT 120000,
+    distress_decay FLOAT DEFAULT 0.5,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================
 -- Triggers for updated_at
 -- ==========================================
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
@@ -126,7 +176,20 @@ BEFORE UPDATE ON patients
 FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
+DROP TRIGGER IF EXISTS set_timestamp_hospitals ON hospitals;
 CREATE TRIGGER set_timestamp_hospitals
 BEFORE UPDATE ON hospitals
 FOR EACH ROW
-EXECUTE PROCEDURE trigger_set_timestamp();
+EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS set_timestamp_treatments ON active_treatments;
+CREATE TRIGGER set_timestamp_treatments
+BEFORE UPDATE ON active_treatments
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+DROP TRIGGER IF EXISTS set_timestamp_policies ON hospital_policies;
+CREATE TRIGGER set_timestamp_policies
+BEFORE UPDATE ON hospital_policies
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();

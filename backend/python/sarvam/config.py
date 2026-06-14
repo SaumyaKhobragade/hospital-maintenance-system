@@ -1,5 +1,5 @@
 """
-config.py — Central configuration for the Vitality AI Sidecar microservice.
+config.py — Central configuration for the HMS AI Sidecar microservice.
 Loads all environment variables, validates presence of critical keys,
 and exposes typed constants consumed by every module in this service.
 """
@@ -34,7 +34,7 @@ SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
 
 # ─── MongoDB (Motor async driver) ─────────────────────────────────────────────
 MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "vitality_ai")
+MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "HMS_ai")
 MONGO_TELEMETRY_COLLECTION: str = "ai_telemetry"
 
 # ─── Server ───────────────────────────────────────────────────────────────────

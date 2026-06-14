@@ -18,6 +18,7 @@ import {
   Layers,
   Sparkle
 } from "lucide-react";
+import { supabase } from "../../../lib/supabaseClient";
 
 interface Patient {
   id: string;
@@ -46,213 +47,54 @@ interface Patient {
   timeline: { step: string; status: "completed" | "processing" | "pending"; time: string }[];
 }
 
-const mockPatients: Patient[] = [
-  {
-    id: "P1",
-    name: "Sarah Jenkins",
-    patientId: "PT-9042",
-    age: 62,
-    bloodGroup: "A+",
-    riskLevel: "CRITICAL",
-    symptoms: ["Severe chest tightness", "Dyspnea on exertion", "Acute blood pressure spike"],
-    allergies: ["Penicillin", "Sulfa drugs"],
-    conditions: ["Type 2 Diabetes", "Chronic Stage-II Hypertension", "Stage 2 Chronic Kidney Disease"],
-    confidence: 96,
-    summary: "Patient presents with acute exacerbation of symptoms secondary to uncontrolled Type 2 Diabetes and chronic stage-II hypertension. Recent prescription OCR analysis indicates potential medication non-compliance or adverse drug-drug interactions. Recommended clinical path: Urgent triage to cardiology for ECG/troponin evaluation and nephrology consult due to renal risk factors.",
-    ocr: {
-      imageName: "rx_jenkins_cardiac_2026.png",
-      extractedMedications: [
-        { name: "Lisinopril", dosage: "20mg daily", confidence: 98, status: "Verified" },
-        { name: "Metformin", dosage: "1000mg twice daily", confidence: 95, status: "Verified" },
-        { name: "Atorvastatin", dosage: "40mg daily", confidence: 92, status: "Verified" },
-        { name: "Ibuprofen", dosage: "400mg as needed", confidence: 99, status: "Extracted (Warning!)" }
-      ],
-      ocrConfidence: 96,
-      status: "Extracted & Parsed"
-    },
-    rag: {
-      chunks: [
-        {
-          text: "EHR Excerpt (Jan 2026): Patient admitted with hypertensive crisis. BP reached 180/110 mmHg. Confirmed patient history of chronic renal stress. Prescribed Lisinopril 20mg.",
-          similarity: 0.92,
-          source: "Central Hospital EMR"
-        },
-        {
-          text: "Outpatient Note (Sep 2025): Metformin dosage adjusted to 1000mg twice daily due to rising HbA1c (8.2%). Mild diabetic peripheral neuropathy noted.",
-          similarity: 0.85,
-          source: "Metropolitan Clinic"
-        },
-        {
-          text: "Cardiology Consult (Jun 2025): Left ventricular hypertrophy noted. Prescribing physician advised close tracking of exertional chest pain.",
-          similarity: 0.79,
-          source: "Mercy Heart Center"
-        }
-      ],
-      vectorConfidence: 94,
-      insights: [
-        "Hypertension history requires dynamic medication dosing adjustments.",
-        "Diabetes medication Metformin requires renal filtration monitoring (eGFR).",
-        "Recent chest tightness matches Jun 2025 Cardiology consult warning regarding exertional chest pain."
-      ]
-    },
-    alerts: [
-      {
-        type: "critical",
-        msg: "DRUG INTERACTION WARNING: Concomitant use of Metformin and Ibuprofen (NSAID) in a patient with chronic kidney disease increases risks of lactic acidosis and acute renal failure.",
-        dept: "Nephrology / Emergency Medicine",
-        priority: "Level 1 (Immediate)"
-      },
-      {
-        type: "warning",
-        msg: "ACUTE HYPERTENSION SPIKE: Measured BP at admission is 175/105 mmHg. High vascular damage risks.",
-        dept: "Cardiology",
-        priority: "Level 2 (High)"
-      }
-    ],
-    timeline: [
-      { step: "Prescription Uploaded", status: "completed", time: "10:14:02 AM" },
-      { step: "OCR Processing & Medication Extraction", status: "completed", time: "10:14:15 AM" },
-      { step: "EMR Vector Semantic Retrieval (RAG)", status: "completed", time: "10:14:38 AM" },
-      { step: "AI Clinical Summary Generation", status: "completed", time: "10:15:01 AM" },
-      { step: "Clinician Verification Audit", status: "processing", time: "In Progress" }
-    ]
-  },
-  {
-    id: "P2",
-    name: "Robert Chen",
-    patientId: "PT-7719",
-    age: 45,
-    bloodGroup: "O-",
-    riskLevel: "HIGH",
-    symptoms: ["Wheezing", "Productive cough", "Oxygen saturation 91% on room air"],
-    allergies: ["Aspirin"],
-    conditions: ["Severe Persistent Asthma", "Allergic Rhinitis"],
-    confidence: 89,
-    summary: "Patient shows signs of acute asthmatic bronchospasm exacerbated by environmental factors. OCR medication scans indicate recent fill of beta-blockers, which are contraindicated in asthmatic patients. Retrieval history reveals previous intubation event in 2024. Prompt respiratory therapy and bronchodilator adjustments recommended.",
-    ocr: {
-      imageName: "rx_chen_respiratory_2026.png",
-      extractedMedications: [
-        { name: "Propranolol", dosage: "40mg daily", confidence: 97, status: "Verified" },
-        { name: "Albuterol HFA", dosage: "2 puffs q4h prn", confidence: 96, status: "Verified" },
-        { name: "Fluticasone/Salmeterol", dosage: "250/50 mcg twice daily", confidence: 91, status: "Verified" }
-      ],
-      ocrConfidence: 94,
-      status: "Extracted & Parsed"
-    },
-    rag: {
-      chunks: [
-        {
-          text: "Intensive Care Summary (Aug 2024): Patient admitted for status asthmaticus. Required mechanical ventilation for 24 hours. Sensitivities to non-selective beta-blockers noted.",
-          similarity: 0.95,
-          source: "Riverside ICU"
-        },
-        {
-          text: "Pulmonology Follow-up (Nov 2025): Spirometry shows FEV1 68% predicted. Recommended strict adherence to daily inhaled corticosteroids.",
-          similarity: 0.81,
-          source: "Riverside Clinic"
-        }
-      ],
-      vectorConfidence: 90,
-      insights: [
-        "Patient has a life-threatening history of acute asthma attacks (ventilation event 2024).",
-        "Beta-blocker (Propranolol) was recently prescribed. Non-selective beta-blockade triggers severe bronchospasm in asthmatic patients."
-      ]
-    },
-    alerts: [
-      {
-        type: "critical",
-        msg: "CONTRAINDICATED DRUG: Propranolol is a non-selective beta-blocker and can cause fatal bronchoconstriction in patients with severe persistent asthma.",
-        dept: "Pulmonology / Emergency Medicine",
-        priority: "Level 1 (Immediate)"
-      },
-      {
-        type: "warning",
-        msg: "RESPIRATORY DEPRESSION RISK: Oxygen saturation is 91%. Risk of respiratory failure based on 2024 history.",
-        dept: "Respiratory Therapy",
-        priority: "Level 2 (High)"
-      }
-    ],
-    timeline: [
-      { step: "Prescription Uploaded", status: "completed", time: "11:22:10 AM" },
-      { step: "OCR Processing & Medication Extraction", status: "completed", time: "11:22:24 AM" },
-      { step: "EMR Vector Semantic Retrieval (RAG)", status: "completed", time: "11:22:45 AM" },
-      { step: "AI Clinical Summary Generation", status: "completed", time: "11:23:02 AM" },
-      { step: "Clinician Verification Audit", status: "pending", time: "Awaiting review" }
-    ]
-  },
-  {
-    id: "P3",
-    name: "Elena Rostova",
-    patientId: "PT-5521",
-    age: 58,
-    bloodGroup: "B-",
-    riskLevel: "MEDIUM",
-    symptoms: ["Bilateral peripheral edema", "Fatigue", "Decreased urine output"],
-    allergies: ["Contrast Agents (lodine)"],
-    conditions: ["Diabetic Nephropathy", "Hypertension", "Anemia of Chronic Disease"],
-    confidence: 84,
-    summary: "Patient shows signs of fluid overload likely secondary to worsening nephrotic-range proteinuria and diabetic nephropathy. Vector matches index multiple outpatient visits detailing gradual eGFR decline. Action required: loop diuretics adjustment, urgent serum creatinine/potassium check, and dietary sodium restriction monitoring.",
-    ocr: {
-      imageName: "rx_rostova_renal_2026.png",
-      extractedMedications: [
-        { name: "Furosemide", dosage: "40mg daily", confidence: 99, status: "Verified" },
-        { name: "Losartan Potassium", dosage: "50mg daily", confidence: 94, status: "Verified" },
-        { name: "Spironolactone", dosage: "25mg daily", confidence: 88, status: "Verified" }
-      ],
-      ocrConfidence: 93,
-      status: "Extracted & Parsed"
-    },
-    rag: {
-      chunks: [
-        {
-          text: "Nephrology Clinic Note (Feb 2026): eGFR calculated at 34 mL/min/1.73m2. Protein-to-creatinine ratio 3.1g/g. Losartan dose maintained for kidney protection.",
-          similarity: 0.91,
-          source: "State Renal Institute"
-        },
-        {
-          text: "Emergency Admission (Oct 2025): Dehydration and acute kidney injury (AKI) super-imposed on CKD. Avoid high-dose diuretics without daily weights.",
-          similarity: 0.82,
-          source: "General Metropolitan"
-        }
-      ],
-      vectorConfidence: 87,
-      insights: [
-        "Stage 3b CKD (eGFR 34) demands cautious diuretic balancing.",
-        "Ensure no active prescription or usage of NSAIDs or iodinated contrasts due to anaphylaxis and severe AKI risks."
-      ]
-    },
-    alerts: [
-      {
-        type: "warning",
-        msg: "RENAL FILTRATION ALERT: eGFR is hovering near Stage 4 CKD threshold. Monitor potassium levels carefully while on Losartan and Spironolactone.",
-        dept: "Nephrology",
-        priority: "Level 3 (Medium)"
-      },
-      {
-        type: "info",
-        msg: "CONTRAST SENSITIVITY: Iodine anaphylaxis history noted in EMR. Flag all diagnostic imaging requiring contrast.",
-        dept: "Radiology",
-        priority: "Level 4 (Info)"
-      }
-    ],
-    timeline: [
-      { step: "Prescription Uploaded", status: "completed", time: "02:05:40 PM" },
-      { step: "OCR Processing & Medication Extraction", status: "completed", time: "02:05:58 PM" },
-      { step: "EMR Vector Semantic Retrieval (RAG)", status: "completed", time: "02:06:12 PM" },
-      { step: "AI Clinical Summary Generation", status: "completed", time: "02:06:35 PM" },
-      { step: "Clinician Verification Audit", status: "pending", time: "Awaiting review" }
-    ]
-  }
-];
-
 export default function AIClinicalSummaryPage() {
-  const [selectedPatientId, setSelectedPatientId] = useState<string>("P1");
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [pipelineProgress, setPipelineProgress] = useState<number>(100);
-  const [pipelineStep, setPipelineStep] = useState<string>("Ready");
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingStep, setGeneratingStep] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [pipelineProgress, setPipelineProgress] = useState(0);
+  const [pipelineStep, setPipelineStep] = useState("Ready");
   const [ocrBoundingBoxActive, setOcrBoundingBoxActive] = useState<number | null>(null);
 
-  const activePatient = mockPatients.find((p) => p.id === selectedPatientId) || mockPatients[0];
+  useEffect(() => {
+    const fetchPatients = async () => {
+      const { data, error } = await supabase.from("patients").select("*");
+      if (data) {
+        const mapped = data.map((dbP: any) => ({
+          id: dbP.id,
+          name: dbP.name || "Unknown Patient",
+          patientId: "PT-" + dbP.id.substring(0, 4),
+          age: dbP.age || 0,
+          bloodGroup: dbP.blood_group || "Unknown",
+          riskLevel: dbP.base_severity > 7 ? "CRITICAL" : dbP.base_severity > 4 ? "HIGH" : "MEDIUM",
+          symptoms: dbP.symptoms || [],
+          allergies: dbP.allergies || [],
+          conditions: dbP.conditions || [],
+          confidence: dbP.ai_risk_score || 0,
+          summary: dbP.ai_summary || "No summary available.",
+          ocr: {
+            imageName: "scanned_rx.pdf",
+            extractedMedications: [],
+            ocrConfidence: 0,
+            status: "Pending"
+          },
+          rag: {
+            chunks: [],
+            vectorConfidence: 0,
+            insights: []
+          },
+          alerts: dbP.alerts || [],
+          timeline: dbP.timeline || []
+        }));
+        setPatients(mapped);
+        if (mapped.length > 0) setSelectedPatientId(mapped[0].id);
+      }
+    };
+    fetchPatients();
+  }, []);
+
+  const activePatient = patients.find((p) => p.id === selectedPatientId) || patients[0];
 
   const handleRunPipeline = () => {
     setIsProcessing(true);
@@ -279,6 +121,7 @@ export default function AIClinicalSummaryPage() {
   };
 
   useEffect(() => {
+    if (!activePatient || !activePatient.ocr || !activePatient.ocr.extractedMedications) return;
     const interval = setInterval(() => {
       setOcrBoundingBoxActive((prev) => {
         if (prev === null) return 0;
@@ -309,7 +152,7 @@ export default function AIClinicalSummaryPage() {
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1">
-            {mockPatients.map((p) => (
+            {patients.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setSelectedPatientId(p.id)}
@@ -365,7 +208,7 @@ export default function AIClinicalSummaryPage() {
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        {!isProcessing && (
+        {!isProcessing && activePatient && (
           <motion.div
             key={activePatient.id}
             initial={{ opacity: 0, y: 10 }}

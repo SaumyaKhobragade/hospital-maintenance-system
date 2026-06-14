@@ -1,5 +1,5 @@
 """
-main.py — Vitality AI Sidecar (Sarvam Scribe + Report)
+main.py — HMS AI Sidecar (Sarvam Scribe + Report)
 """
 
 import logging
@@ -29,7 +29,7 @@ report_graph = ReportWorkflowGraph.get_instance()
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="Vitality AI Sidecar",
+    title="HMS AI Sidecar",
     description="Ambient Clinical Scribe + Automated Patient Report workflows.",
     version="1.0.0",
 )
