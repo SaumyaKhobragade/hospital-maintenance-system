@@ -40,7 +40,7 @@ CHUNK_OVERLAP: int = 150
 SARVAM_API_KEY: str = os.getenv("SARVAM_API_KEY", "")
 SARVAM_STT_URL: str = "https://api.sarvam.ai/speech-to-text"
 SARVAM_STT_MODEL: str = "saaras:v3"
-SARVAM_LANGUAGE_CODE: str = "hi-IN"
+SARVAM_LANGUAGE_CODE: str = "unknown"  # auto-detect: works for Hindi, English, Hinglish, etc.
 
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
@@ -48,7 +48,7 @@ SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
 
 # ─── MongoDB (Motor async driver) ─────────────────────────────────────────────
 MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "vitality_ai")
+MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "HMS_ai")
 MONGO_TELEMETRY_COLLECTION: str = "ai_telemetry"
 
 # ─── Server Settings ──────────────────────────────────────────────────────────

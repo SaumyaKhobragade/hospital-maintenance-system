@@ -533,7 +533,7 @@ async def generate_combined_report_route(
     try:
         retrieved_docs = vector_store_service.retrieve_patient_documents(
             patient_id,
-            query="pathology radiology clinical laboratory test reports history symptoms chronic conditions",
+            query="pathology radiology clinical laboratory test reports history symptoms chronic conditions voice transcript conversation session soap note",
             k=15
         )
     except Exception as e:

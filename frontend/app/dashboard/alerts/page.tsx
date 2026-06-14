@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RefreshCw, AlertTriangle, MapPin, Clock, ShieldCheck, ChevronRight, Play, Camera } from "lucide-react";
 import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
 
-const alerts = [
-  { id: "AL-441", hospital: "Central Metropolitan", type: "Distress", confidence: 92, wait: "Just now", severity: "critical" },
-  { id: "AL-440", hospital: "Riverside General", type: "Fall Detected", confidence: 78, wait: "2m ago", severity: "high" },
-  { id: "AL-439", hospital: "Eastern District", type: "Crowd Surge", confidence: 65, wait: "8m ago", severity: "medium" },
-  { id: "AL-438", hospital: "Northgate Medical", type: "Distress", confidence: 84, wait: "12m ago", severity: "high" },
-  { id: "AL-437", hospital: "Westside Trauma", type: "Aggression", confidence: 71, wait: "21m ago", severity: "medium" },
-];
+import { supabase } from "../../../lib/supabaseClient";
+
+interface AlertData {
+  id: string;
+  hospital: string;
+  type: string;
+  confidence: number;
+  wait: string;
+  severity: string;
+}
 
 const sevColor: Record<string, string> = {
   critical: "bg-rose-50 text-rose-700 border-rose-100",
@@ -28,7 +31,31 @@ const clips = [
 ];
 
 export default function Alerts() {
-  const [selected, setSelected] = useState(alerts[0]);
+  const [alerts, setAlerts] = useState<AlertData[]>([]);
+  const [selected, setSelected] = useState<AlertData | null>(null);
+
+  const fetchAlerts = async () => {
+    const { data } = await supabase
+      .from("distress_events")
+      .select("id, type, confidence, event_timestamp, patients ( target_hospital_id, base_severity )");
+
+    if (data) {
+      const mapped = data.map((d: any) => ({
+        id: "AL-" + d.id.substring(0, 4),
+        hospital: "Hospital " + (d.patients?.target_hospital_id?.substring(0,4) || "Unknown"),
+        type: d.type || "Distress",
+        confidence: Math.round(d.confidence || 0),
+        wait: d.event_timestamp ? new Date(d.event_timestamp).toLocaleTimeString() : "Just now",
+        severity: (d.patients?.base_severity > 7) ? "critical" : (d.patients?.base_severity > 4) ? "high" : "medium"
+      }));
+      setAlerts(mapped);
+      if (mapped.length > 0) setSelected(mapped[0]);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
 
   return (
     <>
@@ -41,7 +68,7 @@ export default function Alerts() {
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-rose-50 text-rose-700 border border-rose-100">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> 5 active alerts
           </span>
-          <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"><RefreshCw className="w-4 h-4" /> Refresh</button>
+          <button onClick={fetchAlerts} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"><RefreshCw className="w-4 h-4" /> Refresh</button>
         </div>
       </div>
 
@@ -72,7 +99,7 @@ export default function Alerts() {
                 <button
                   key={a.id}
                   onClick={() => setSelected(a)}
-                  className={`w-full p-4 flex items-center gap-3 text-left hover:bg-slate-50 transition ${selected.id === a.id ? "bg-blue-50/40" : ""}`}
+                  className={`w-full p-4 flex items-center gap-3 text-left hover:bg-slate-50 transition ${selected?.id === a.id ? "bg-blue-50/40" : ""}`}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.severity === "critical" ? "bg-rose-50 text-rose-600" : a.severity === "high" ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"}`}>
                     <AlertTriangle className="w-4 h-4" />
@@ -95,6 +122,7 @@ export default function Alerts() {
         </div>
 
         <div className="col-span-3 space-y-5">
+          {selected ? (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="aspect-video bg-slate-900 relative">
               <ImageWithFallback src={clips[0]} alt="" className="w-full h-full object-cover opacity-70" />
@@ -141,6 +169,11 @@ export default function Alerts() {
               </div>
             </div>
           </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center justify-center min-h-[400px] text-slate-400">
+              No alert selected
+            </div>
+          )}
         </div>
       </div>
     </>

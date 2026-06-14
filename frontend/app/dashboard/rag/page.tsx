@@ -7,6 +7,7 @@ import {
   Loader2, RefreshCw, AlertTriangle, Sparkles, X, WifiOff, BookOpen,
   Search, ChevronRight, Hash, Tag,
 } from "lucide-react";
+<<<<<<< HEAD
 import { pythonApi, SummaryResponse, RiskResponse, ChunkDoc, ChunksResponse } from "@/lib/pythonApi";
 
 export default function RAGHistoryPage() {
@@ -19,6 +20,95 @@ export default function RAGHistoryPage() {
   const [risks, setRisks] = useState<RiskResponse | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedChunkIdx, setSelectedChunkIdx] = useState<number | null>(null);
+=======
+
+interface RAGTemplate {
+  id: string;
+  name: string;
+  fileName: string;
+  ocrText: string;
+  extractedFields: {
+    medications: { name: string; dosage: string }[];
+    diagnosis: string;
+    doctorNotes: string;
+    allergies: string[];
+  };
+  embeddingMetrics: {
+    latency: string;
+    chunkCount: number;
+    vectorDims: number;
+  };
+  retrievedChunks: {
+    id: string;
+    source: string;
+    text: string;
+    similarity: number;
+    medOverlap: string[];
+  }[];
+  aiSummary: {
+    summary: string;
+    patterns: string[];
+    alerts: string[];
+  };
+}
+
+import { supabase } from "../../../lib/supabaseClient";
+
+interface SimilarityRecord {
+  id: string;
+  patientId: string;
+  matchType: string;
+  score: number;
+  source: string;
+  timestamp: string;
+  confidence: number;
+}
+
+export default function RAGHistoryPage() {
+  const [ragTemplates, setRagTemplates] = useState<RAGTemplate[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [pipelineProgress, setPipelineProgress] = useState<number>(100);
+  const [pipelineStep, setPipelineStep] = useState<string>("Ready");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [tableRecords, setTableRecords] = useState<SimilarityRecord[]>([]);
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: templates } = await supabase.from("rag_templates").select("*");
+      if (templates) {
+        const mapped = templates.map((t: any) => ({
+          id: t.id,
+          name: t.name || "Template",
+          fileName: t.file_name || "Unknown",
+          ocrText: t.ocr_text || "",
+          extractedFields: t.extracted_fields || { medications: [], diagnosis: "", doctorNotes: "", allergies: [] },
+          embeddingMetrics: t.embedding_metrics || { latency: "0ms", chunkCount: 0, vectorDims: 0 },
+          retrievedChunks: t.ai_summary?.chunks || [],
+          aiSummary: t.ai_summary || { summary: "", patterns: [], alerts: [] }
+        }));
+        setRagTemplates(mapped);
+        if (mapped.length > 0) setActiveTemplateId(mapped[0].id);
+      }
+      const { data: records } = await supabase.from("rag_similarity_records").select("*");
+      if (records) {
+        const mappedRecs = records.map((r: any) => ({
+          id: r.id,
+          patientId: r.patient_id || "Unknown",
+          matchType: r.match_type || "General",
+          score: r.score || 0,
+          source: r.source || "Unknown",
+          timestamp: r.record_timestamp || r.created_at || "Just now",
+          confidence: r.confidence || 0
+        }));
+        setTableRecords(mappedRecs);
+        if (mappedRecs.length > 0) setSelectedRecordId(mappedRecs[0].id);
+      }
+    };
+    fetchData();
+  }, []);
+>>>>>>> 94bac8fe2e71ae26466f436c985f54f920c0cf00
 
   // ── Ingest state ─────────────────────────────────────────────────────────
   const [ingestId, setIngestId] = useState("");
@@ -135,6 +225,7 @@ export default function RAGHistoryPage() {
               />
             </div>
 
+<<<<<<< HEAD
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Semantic Query <span className="text-slate-300 font-normal">(optional)</span>
@@ -147,6 +238,128 @@ export default function RAGHistoryPage() {
               />
               <p className="text-[10px] text-slate-400">Reranks chunks by similarity to your query.</p>
             </div>
+=======
+      <AnimatePresence mode="wait">
+        {!isProcessing && (
+          <motion.div
+            key={activeTemplate.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-5"
+          >
+            {/* Left Column: Upload widget, extraction checklist */}
+            <div className="lg:col-span-1 flex flex-col gap-5">
+              {activeTemplate && (
+                <>
+                  {/* 3. Prescription Upload & OCR Section */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col gap-4">
+                    <span className="text-sm font-semibold text-slate-900 border-b border-slate-50 pb-2 block">
+                      Drag & Drop Prescription Ingest
+                    </span>
+
+                    <div className="border border-dashed border-slate-200 bg-slate-50 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:bg-slate-100/50 transition">
+                  <UploadCloud className="w-8 h-8 text-slate-400" />
+                  <div className="flex flex-col gap-0.5 text-xs">
+                    <span className="font-semibold text-slate-800">{activeTemplate?.fileName}</span>
+                    <span className="text-slate-400">PDF / Image uploaded successfully</span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-150 rounded-xl p-3 flex flex-col gap-1.5 text-xs">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono">Parsed OCR Stream</span>
+                  <p className="text-slate-700 italic font-medium leading-normal">
+                    "{activeTemplate.ocrText}"
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2.5 text-xs">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Extracted Schema</span>
+                  
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1 border-b border-slate-50 pb-2">
+                      <span className="text-slate-400 font-semibold block">Extracted Meds</span>
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {activeTemplate.extractedFields.medications.map((med, idx) => (
+                          <span key={idx} className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-0.5 rounded-lg font-semibold">
+                            {med.name} ({med.dosage})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 border-b border-slate-50 pb-2">
+                      <span className="text-slate-400 font-semibold block">Extracted Diagnosis</span>
+                      <span className="font-semibold text-slate-800">{activeTemplate.extractedFields.diagnosis}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 border-b border-slate-50 pb-2">
+                      <span className="text-slate-400 font-semibold block">Allergies Detected</span>
+                      <div className="flex flex-wrap gap-1">
+                        {activeTemplate.extractedFields.allergies.map((al, idx) => (
+                          <span key={idx} className="bg-rose-50 border border-rose-100 text-rose-700 px-2 py-0.5 rounded">
+                            {al}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-400 font-semibold block">Doctor Notes Summary</span>
+                      <p className="text-slate-650 leading-normal font-medium italic">
+                        "{activeTemplate.extractedFields.doctorNotes}"
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Embedding Generation Section */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col gap-4">
+                <span className="text-sm font-semibold text-slate-900 border-b border-slate-50 pb-2 block">
+                  Embedding Ingestion Pipeline
+                </span>
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-xl p-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                      <Cpu className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col text-xs">
+                      <span className="font-semibold text-slate-800">Chunk Ingestion</span>
+                      <span className="text-slate-400">Dimensions: {activeTemplate.embeddingMetrics.vectorDims} | Latency: {activeTemplate.embeddingMetrics.latency}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-500 bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                    <div>
+                      <span className="block text-slate-400">Model Name</span>
+                      <span className="font-semibold text-slate-700">text-embedding-ada-002</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-slate-400">Segment Chunks</span>
+                      <span className="font-semibold text-slate-700">{activeTemplate.embeddingMetrics.chunkCount} Nodes</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 9. AI Monitoring Cards */}
+                <div className="grid grid-cols-2 gap-3 text-xs border-t border-slate-50 pt-3">
+                  <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
+                    <span className="text-slate-400 block mb-0.5">Retr Latency</span>
+                    <span className="font-semibold text-slate-700 font-mono">45 ms</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
+                    <span className="text-slate-400 block mb-0.5">Embed Acc.</span>
+                    <span className="font-semibold text-emerald-600 font-mono">99.8%</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+>>>>>>> 94bac8fe2e71ae26466f436c985f54f920c0cf00
 
             <button
               onClick={() => handleRetrieve()}

@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Search, ChevronDown, MoreHorizontal, Filter, Phone, ChevronLeft, ChevronRight, Wifi } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useSseStats } from "../lib/SseContext";
+import { supabase } from "../lib/supabaseClient";
 
 type Patient = {
   no: string;
@@ -12,27 +14,46 @@ type Patient = {
   contact: string;
   joinDate: string;
   lastVisit: string;
-  status: "Returning" | "New" | "Critical";
+  status: string;
   avatar: string;
 };
 
-const patients: Patient[] = [
-  { no: "01", id: "#JK75HT938476", name: "Aarav Rahman", age: 22, contact: "+1 618-856-3032", joinDate: "23 Dec 2026", lastVisit: "23 Dec 2026, 07:32 PM", status: "Returning", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80" },
-  { no: "02", id: "#FD09763IU872", name: "Hasan Mahmud", age: 42, contact: "+1 618-856-3032", joinDate: "23 Dec 2026", lastVisit: "23 Dec 2026, 06:12 PM", status: "New", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80" },
-  { no: "03", id: "#JT8765FK9876", name: "Sakil Mahmud", age: 32, contact: "+1 618-856-3032", joinDate: "23 Dec 2026", lastVisit: "23 Dec 2026, 05:24 PM", status: "Returning", avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=80" },
-  { no: "04", id: "#FR8765J87654", name: "Rakibul Haque", age: 23, contact: "+1 618-856-3032", joinDate: "23 Dec 2026", lastVisit: "23 Dec 2026, 04:02 PM", status: "Critical", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80" },
-];
-
-const statusColor: Record<Patient["status"], string> = {
-  Returning: "bg-blue-50 text-blue-700 border-blue-100",
-  New: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  Critical: "bg-rose-50 text-rose-700 border-rose-100",
+const statusColor: Record<string, string> = {
+  "Returning": "bg-blue-50 text-blue-700 border-blue-100",
+  "New": "bg-emerald-50 text-emerald-700 border-emerald-100",
+  "Critical": "bg-rose-50 text-rose-700 border-rose-100",
+  "Waiting": "bg-orange-50 text-orange-700 border-orange-100",
+  "Under Review": "bg-purple-50 text-purple-700 border-purple-100",
+  "Discharged": "bg-gray-50 text-gray-700 border-gray-100",
+  "Intake Completed": "bg-blue-50 text-blue-700 border-blue-100",
 };
 
 const tabs = ["All", "Active", "Inactive"];
 
 export function PatientTable() {
   const stats = useSseStats();
+  const [patients, setPatients] = useState<Patient[]>([]);
+
+  useEffect(() => {
+    async function fetchPatients() {
+      const { data, error } = await supabase.from("patients").select("*").limit(20);
+      if (!error && data) {
+        const mapped = data.map((p, i) => ({
+          no: String(i + 1).padStart(2, "0"),
+          id: p.id.split("-")[0].toUpperCase(),
+          name: p.name || "Unknown",
+          age: p.age || 0,
+          contact: "+1 555-0000",
+          joinDate: new Date(p.created_at).toLocaleDateString(),
+          lastVisit: new Date(p.updated_at).toLocaleDateString(),
+          status: p.status || "Waiting",
+          avatar: p.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80",
+        }));
+        setPatients(mapped);
+      }
+    }
+    fetchPatients();
+  }, []);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
@@ -111,7 +132,7 @@ export function PatientTable() {
                 <td className="py-4">
                   <div className="flex items-center gap-2.5">
                     <Avatar className="w-7 h-7"><AvatarImage src={p.avatar} /><AvatarFallback>{p.name[0]}</AvatarFallback></Avatar>
-                    <span className="text-sm text-slate-800">Dr. {p.name}</span>
+                    <span className="text-sm text-slate-800">{p.name}</span>
                   </div>
                 </td>
                 <td className="py-4 text-sm text-slate-700">{p.age}</td>

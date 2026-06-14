@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Users,
@@ -26,6 +26,9 @@ import {
   ChevronLeft,
   Sparkles
 } from "lucide-react";
+import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
+import { AddPatientModal } from "../../../components/AddPatientModal";
+import { supabase } from "../../../lib/supabaseClient";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
 
 interface PatientRecord {
@@ -50,133 +53,48 @@ interface PatientRecord {
   timeline: { step: string; status: "completed" | "processing" | "pending"; time: string }[];
 }
 
-const mockPatients: PatientRecord[] = [
-  {
-    id: "PT-9042",
-    name: "Sarah Jenkins",
-    age: 62,
-    gender: "Female",
-    bloodGroup: "A+",
-    dept: "Cardiology",
-    triagePriority: "Critical",
-    aiRiskScore: 96,
-    status: "Waiting",
-    queuePos: "1",
-    assignedDoc: "Dr. Hasan",
-    lastUpdated: "Just now",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80",
-    symptoms: ["Severe chest tightness", "Dyspnea on exertion", "Acute blood pressure spike"],
-    allergies: ["Penicillin", "Sulfa drugs"],
-    conditions: ["Type 2 Diabetes", "Chronic Stage-II Hypertension", "Stage 2 Chronic Kidney Disease"],
-    aiSummary: "Patient presents with acute exacerbation of symptoms secondary to uncontrolled Type 2 Diabetes and chronic stage-II hypertension. Recent prescription OCR analysis indicates potential medication non-compliance or adverse drug-drug interactions. Recommended clinical path: Urgent triage to cardiology for ECG/troponin evaluation and nephrology consult due to renal risk factors.",
-    alerts: [
-      "DRUG INTERACTION: Concomitant use of Metformin and Ibuprofen in renal stress increases lactic acidosis risk.",
-      "VASCULAR WARNING: Measured BP is 175/105 mmHg. High damage risk."
-    ],
-    timeline: [
-      { step: "Prescription Uploaded", status: "completed", time: "10:14 AM" },
-      { step: "OCR Processing Completed", status: "completed", time: "10:15 AM" },
-      { step: "EMR Vector Semantic Retrieval (RAG)", status: "completed", time: "10:15 AM" },
-      { step: "AI Clinical Summary Generated", status: "completed", time: "10:15 AM" },
-      { step: "Clinician Verification Audit", status: "processing", time: "In Progress" }
-    ]
-  },
-  {
-    id: "PT-7719",
-    name: "Robert Chen",
-    age: 45,
-    gender: "Male",
-    bloodGroup: "O-",
-    dept: "Pulmonology",
-    triagePriority: "High",
-    aiRiskScore: 89,
-    status: "Intake Completed",
-    queuePos: "4",
-    assignedDoc: "Dr. Hasan",
-    lastUpdated: "2m ago",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80",
-    symptoms: ["Wheezing", "Productive cough", "Oxygen saturation 91% on room air"],
-    allergies: ["Aspirin"],
-    conditions: ["Severe Persistent Asthma", "Allergic Rhinitis"],
-    aiSummary: "Patient shows signs of acute asthmatic bronchospasm exacerbated by environmental factors. OCR medication scans indicate recent fill of beta-blockers, which are contraindicated in asthmatic patients. Retrieval history reveals previous intubation event in 2024. Prompt respiratory therapy and bronchodilator adjustments recommended.",
-    alerts: [
-      "CONTRAINDICATION: Propranolol is a non-selective beta-blocker and can cause fatal bronchoconstriction in patients with severe persistent asthma.",
-      "RESPIRATORY RATIO: Oxygen saturation is 91% on room air."
-    ],
-    timeline: [
-      { step: "Voice Intake Initiated", status: "completed", time: "11:22 AM" },
-      { step: "Speech Translation Completed", status: "completed", time: "11:22 AM" },
-      { step: "EMR History Semantic Mapping", status: "completed", time: "11:22 AM" },
-      { step: "AI Summary Generation Complete", status: "completed", time: "11:23 AM" },
-      { step: "Triage Queue Assignment", status: "completed", time: "11:23 AM" }
-    ]
-  },
-  {
-    id: "PT-5521",
-    name: "Elena Rostova",
-    age: 58,
-    gender: "Female",
-    bloodGroup: "B-",
-    dept: "Nephrology",
-    triagePriority: "Medium",
-    aiRiskScore: 84,
-    status: "Under Review",
-    queuePos: "8",
-    assignedDoc: "Dr. Vance",
-    lastUpdated: "5m ago",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80",
-    symptoms: ["Bilateral peripheral edema", "Fatigue", "Decreased urine output"],
-    allergies: ["Contrast Agents (lodine)"],
-    conditions: ["Diabetic Nephropathy", "Hypertension", "Anemia of Chronic Disease"],
-    aiSummary: "Patient shows signs of fluid overload likely secondary to worsening nephrotic-range proteinuria and diabetic nephropathy. Vector matches index multiple outpatient visits detailing gradual eGFR decline. Action required: loop diuretics adjustment, urgent serum creatinine/potassium check, and dietary sodium restriction monitoring.",
-    alerts: [
-      "RENAL FILTRATION ALERT: eGFR is hovering near Stage 4 CKD threshold. Monitor potassium levels carefully while on Losartan and Spironolactone."
-    ],
-    timeline: [
-      { step: "Prescription Uploaded", status: "completed", time: "02:05 PM" },
-      { step: "OCR Processing & Medication Extraction", status: "completed", time: "02:05 PM" },
-      { step: "EMR Vector Semantic Retrieval (RAG)", status: "completed", time: "02:06 PM" },
-      { step: "AI Clinical Summary Generation", status: "completed", time: "02:06 PM" },
-      { step: "Clinician Verification Audit", status: "pending", time: "Awaiting review" }
-    ]
-  },
-  {
-    id: "PT-3312",
-    name: "Marcus Vance",
-    age: 34,
-    gender: "Male",
-    bloodGroup: "O+",
-    dept: "Pediatrics",
-    triagePriority: "Stable",
-    aiRiskScore: 32,
-    status: "Discharged",
-    queuePos: "-",
-    assignedDoc: "Dr. Hasan",
-    lastUpdated: "1h ago",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80",
-    symptoms: ["Mild fever", "Sore throat", "Dry cough"],
-    allergies: ["None"],
-    conditions: ["None"],
-    aiSummary: "Patient exhibits symptoms of mild upper respiratory tract infection. Stable baseline. Rest and hydration recommended. No critical risks or contraindications detected.",
-    alerts: [],
-    timeline: [
-      { step: "Check-in Complete", status: "completed", time: "05:10 PM" },
-      { step: "Symptoms Logged", status: "completed", time: "05:11 PM" },
-      { step: "AI Summary Generation Complete", status: "completed", time: "05:12 PM" },
-      { step: "Discharge Audit Complete", status: "completed", time: "06:12 PM" }
-    ]
-  }
-];
-
 export default function PatientsDirectoryPage() {
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>("PT-9042");
+  const [patients, setPatients] = useState<PatientRecord[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filterDept, setFilterDept] = useState<string>("All");
   const [filterPriority, setFilterPriority] = useState<string>("All");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
-  const selectedPatient = mockPatients.find((p) => p.id === selectedPatientId);
+  useEffect(() => {
+    const fetchPatients = async () => {
+      const { data, error } = await supabase.from("patients").select("*");
+      if (data) {
+        const mapped = data.map((dbP: any) => ({
+          id: dbP.id,
+          name: dbP.name || "Unknown Patient",
+          age: dbP.age || 0,
+          gender: dbP.gender || "Unknown",
+          bloodGroup: dbP.blood_group || "Unknown",
+          dept: dbP.department || "General",
+          triagePriority: dbP.triage_priority || "Stable",
+          aiRiskScore: dbP.ai_risk_score || 0,
+          status: dbP.status || "Waiting",
+          queuePos: dbP.queue_pos || "-",
+          assignedDoc: dbP.assigned_doc || "Unassigned",
+          lastUpdated: dbP.updated_at ? new Date(dbP.updated_at).toLocaleTimeString() : "-",
+          avatar: dbP.avatar || "",
+          symptoms: dbP.symptoms || [],
+          allergies: dbP.allergies || [],
+          conditions: dbP.conditions || [],
+          aiSummary: dbP.ai_summary || "",
+          alerts: dbP.alerts || [],
+          timeline: dbP.timeline || []
+        }));
+        setPatients(mapped);
+        if (mapped.length > 0) setSelectedPatientId(mapped[0].id);
+      }
+    };
+    fetchPatients();
+  }, []);
+
+  const selectedPatient = patients.find((p) => p.id === selectedPatientId);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -186,8 +104,7 @@ export default function PatientsDirectoryPage() {
     }, 400);
   };
 
-  // Filtering Logic
-  const filteredPatients = mockPatients.filter((p) => {
+  const filteredPatients = patients.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -220,20 +137,22 @@ export default function PatientsDirectoryPage() {
           </p>
         </div>
 
-        <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm cursor-pointer self-start md:self-auto">
-          <Plus className="w-4 h-4" /> Add Patient
-        </button>
+        <AddPatientModal>
+          <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm cursor-pointer self-start md:self-auto">
+            <Plus className="w-4 h-4" /> Add Patient
+          </button>
+        </AddPatientModal>
       </div>
 
       {/* 2. Overview Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         {[
-          { label: "Total Patients", value: "8,322", change: "+14 this week", icon: Users, color: "bg-blue-50 text-blue-600 border border-blue-100" },
-          { label: "Critical Patients", value: "142", change: "Immediate attention", icon: AlertTriangle, color: "bg-rose-50 text-rose-600 border border-rose-100" },
-          { label: "Patients Waiting", value: "212", change: "In queues", icon: Clock, color: "bg-violet-50 text-violet-600 border border-violet-100" },
-          { label: "AI Flagged Cases", value: "45", change: "Drug-drug warnings", icon: Sparkles, color: "bg-amber-50 text-amber-600 border border-amber-100" },
-          { label: "Active Voice Intakes", value: "12", change: "Kiosk processing", icon: Activity, color: "bg-teal-50 text-teal-600 border border-teal-100" },
-          { label: "Emergency Admissions", value: "38", change: "Today total", icon: Heart, color: "bg-emerald-50 text-emerald-600 border border-emerald-100" }
+          { label: "Total Patients", value: patients.length.toLocaleString(), change: "Loaded dynamically", icon: Users, color: "bg-blue-50 text-blue-600 border border-blue-100" },
+          { label: "Critical Patients", value: patients.filter(p => p.triagePriority === "Critical" || p.triagePriority === "CRITICAL").length.toLocaleString(), change: "Immediate attention", icon: AlertTriangle, color: "bg-rose-50 text-rose-600 border border-rose-100" },
+          { label: "Patients Waiting", value: patients.filter(p => p.status === "Waiting" || p.status === "WAITING").length.toLocaleString(), change: "In queues", icon: Clock, color: "bg-violet-50 text-violet-600 border border-violet-100" },
+          { label: "AI Flagged Cases", value: patients.filter(p => p.aiRiskScore > 75).length.toLocaleString(), change: "High risk score", icon: Sparkles, color: "bg-amber-50 text-amber-600 border border-amber-100" },
+          { label: "Active Voice Intakes", value: "0", change: "Dynamic check-ins", icon: Activity, color: "bg-teal-50 text-teal-600 border border-teal-100" },
+          { label: "Emergency Admissions", value: patients.filter(p => p.dept === "Emergency").length.toLocaleString(), change: "Today total", icon: Heart, color: "bg-emerald-50 text-emerald-600 border border-emerald-100" }
         ].map((stat, idx) => {
           const Icon = stat.icon;
           return (
@@ -429,7 +348,7 @@ export default function PatientsDirectoryPage() {
             </div>
 
             <div className="p-4 flex items-center justify-between text-xs text-slate-400 border-t border-slate-50 bg-slate-50/20">
-              <span>Showing {filteredPatients.length} of {mockPatients.length} records</span>
+              <span>Showing {filteredPatients.length} of {patients.length} records</span>
               <div className="flex gap-2">
                 <button className="flex items-center gap-0.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-650 cursor-not-allowed">
                   <ChevronLeft className="w-3.5 h-3.5" /> Prev
@@ -580,7 +499,7 @@ export default function PatientsDirectoryPage() {
               Emergency Escalation Box
             </span>
             <div className="flex flex-col gap-3">
-              {mockPatients
+              {patients
                 .filter((p) => p.triagePriority === "Critical" || p.triagePriority === "High")
                 .map((p) => (
                   <div

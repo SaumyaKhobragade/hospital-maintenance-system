@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ShieldCheck, Save, RotateCcw, Info, AlertTriangle, Wifi } from "lucide-react";
-import { api } from "../../../lib/api";
+import { supabase } from "../../../lib/supabaseClient";
 
-const POLICY_OPTIONS = [
-  { name: "Adaptive v2.4", active: true,  desc: "Dynamic aging + crisis-aware boost" },
-  { name: "Strict FIFO",   active: false, desc: "Pure first-come-first-served" },
-  { name: "Severity-First",active: false, desc: "Hard-priority by clinical severity" },
-  { name: "Crisis Override",active: false, desc: "Emergency mode — all rules suspended" },
-];
+interface PolicyOption {
+  id?: string;
+  name: string;
+  active: boolean;
+  desc: string;
+}
 
 const DEFAULTS = {
   severityWeight: 1.0,
@@ -27,35 +27,62 @@ export default function PolicyConfig() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  // Load current policies from backend
+  const [policyOptions, setPolicyOptions] = useState<PolicyOption[]>([]);
+  const [activePolicyId, setActivePolicyId] = useState<string | null>(null);
+
+  // Load current policies from Supabase
   useEffect(() => {
-    api.getPolicies().then((p) => {
-      setPolicy((prev) => ({
-        ...prev,
-        severityWeight:               p.severityWeight                ?? prev.severityWeight,
-        agingFactor:                  p.agingFactor                   ?? prev.agingFactor,
-        agingEnabled:                 p.agingEnabled                  ?? prev.agingEnabled,
-        distressProvisionalBoost:     p.distressProvisionalBoost      ?? prev.distressProvisionalBoost,
-        distressConfirmedBoost:       p.distressConfirmedBoost        ?? prev.distressConfirmedBoost,
-        distressProvisionalTimeoutMs: p.distressProvisionalTimeoutMs  ?? prev.distressProvisionalTimeoutMs,
-        distressDecay:                p.distressDecay                 ?? prev.distressDecay,
-      }));
-      setSaved(null);
-    }).catch(() => {/* backend may not be running yet */});
+    const fetchConfig = async () => {
+      const { data } = await supabase.from("hospital_policies").select("*").order("created_at", { ascending: true });
+      if (data && data.length > 0) {
+        // Find the active policy config
+        const activePol = data.find(p => p.active) || data[0];
+        
+        setPolicy((prev) => ({
+          ...prev,
+          severityWeight:               activePol.severity_weight ?? prev.severityWeight,
+          agingFactor:                  activePol.aging_factor ?? prev.agingFactor,
+          agingEnabled:                 activePol.aging_enabled ?? prev.agingEnabled,
+          distressProvisionalBoost:     activePol.distress_provisional_boost ?? prev.distressProvisionalBoost,
+          distressConfirmedBoost:       activePol.distress_confirmed_boost ?? prev.distressConfirmedBoost,
+          distressProvisionalTimeoutMs: activePol.distress_provisional_timeout_ms ?? prev.distressProvisionalTimeoutMs,
+          distressDecay:                activePol.distress_decay ?? prev.distressDecay,
+        }));
+        
+        const mappedOpts = data.map((p: any) => ({
+          id: p.id,
+          name: p.name || "Custom Policy",
+          active: p.active || false,
+          desc: p.description || ""
+        }));
+        setPolicyOptions(mappedOpts);
+        setActivePolicyId(activePol.id);
+        setSaved(null);
+      }
+    };
+    fetchConfig();
   }, []);
 
   const handleSave = useCallback(async () => {
     setLoading(true); setStatus(null);
     try {
-      await Promise.all(
-        Object.entries(policies).map(([k, v]) => api.updatePolicy(k, v))
-      );
+      if (activePolicyId) {
+        await supabase.from("hospital_policies").update({
+          severity_weight: policies.severityWeight,
+          aging_factor: policies.agingFactor,
+          aging_enabled: policies.agingEnabled,
+          distress_provisional_boost: policies.distressProvisionalBoost,
+          distress_confirmed_boost: policies.distressConfirmedBoost,
+          distress_provisional_timeout_ms: policies.distressProvisionalTimeoutMs,
+          distress_decay: policies.distressDecay
+        }).eq("id", activePolicyId);
+      }
       setSaved(policies);
-      setStatus({ ok: true, msg: "Policies saved successfully — active immediately." });
+      setStatus({ ok: true, msg: "Policies saved to Supabase successfully." });
     } catch (e: any) {
       setStatus({ ok: false, msg: `Save failed: ${e.message}` });
     } finally { setLoading(false); }
-  }, [policies]);
+  }, [policies, activePolicyId]);
 
   const handleReset = () => {
     setPolicy(DEFAULTS);
@@ -76,7 +103,7 @@ export default function PolicyConfig() {
           <p className="text-sm text-slate-500">Live-tune the rules powering city-wide patient routing.</p>
         </div>
         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
-          <Wifi className="w-3 h-3" /> Synced to backend
+          <Wifi className="w-3 h-3" /> Synced to Supabase
         </span>
       </div>
 
@@ -93,13 +120,13 @@ export default function PolicyConfig() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <h3 className="text-slate-900 mb-4" style={{ fontWeight: 600 }}>Available Policies</h3>
             <div className="space-y-2">
-              {POLICY_OPTIONS.map((p) => (
-                <label key={p.name} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${p.active ? "border-blue-200 bg-blue-50/40" : "border-slate-100 hover:bg-slate-50"}`}>
-                  <input type="radio" name="policy" defaultChecked={p.active} className="mt-1 accent-blue-600" />
+              {policyOptions.map((p) => (
+                <label key={p.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${p.id === activePolicyId ? "border-blue-200 bg-blue-50/40" : "border-slate-100 hover:bg-slate-50"}`}>
+                  <input type="radio" name="policy" checked={p.id === activePolicyId} onChange={() => setActivePolicyId(p.id || null)} className="mt-1 accent-blue-600" />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-slate-900" style={{ fontWeight: 600 }}>{p.name}</span>
-                      {p.active && <span className="text-xs text-blue-600">ACTIVE</span>}
+                      {p.id === activePolicyId && <span className="text-xs text-blue-600">ACTIVE</span>}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">{p.desc}</p>
                   </div>

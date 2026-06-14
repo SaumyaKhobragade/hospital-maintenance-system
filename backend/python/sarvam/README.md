@@ -1,6 +1,6 @@
-# Vitality AI Sidecar Microservice
+# HMS AI Sidecar Microservice
 
-Async Python FastAPI sidecar that plugs directly into the **Vitality Java 17 / Spring Boot** hospital triage backend. Provides two production-grade AI workflows powered by **LangGraph**, **LangChain**, **Sarvam AI**, and **Ollama/Groq**.
+Async Python FastAPI sidecar that plugs directly into the **HMS Java 17 / Spring Boot** hospital triage backend. Provides two production-grade AI workflows powered by **LangGraph**, **LangChain**, **Sarvam AI**, and **Ollama/Groq**.
 
 ---
 
@@ -12,7 +12,7 @@ Java Spring Boot (Port 9090)
         ├── REST calls ──────────────────────────────────────────┐
         └── WebSocket /ws/events ─────────────────────────────── │
                                                                  ▼
-                    Vitality AI Sidecar (Port 8003)
+                    HMS AI Sidecar (Port 8003)
                     ┌─────────────────────────────────────────┐
                     │                                         │
                     │  Feature 1: Ambient Clinical Scribe     │
@@ -120,6 +120,7 @@ http://localhost:8003/docs
 ### Feature 1: Ambient Clinical Scribe
 
 #### Start Pipeline
+
 ```http
 POST /scribe/start
 Content-Type: application/json
@@ -134,11 +135,13 @@ Content-Type: application/json
 **Response:** `ScribeDraftResponse` containing `thread_id`, `raw_transcript`, `structured_soap_note`, `patient_report_draft`. Status: `PENDING_APPROVAL`.
 
 #### Poll Status
+
 ```http
 GET /scribe/status?thread_id=scribe-PAT-001-abc12345
 ```
 
 #### Doctor Approve & Dispatch
+
 ```http
 POST /scribe/approve
 Content-Type: application/json
@@ -187,6 +190,7 @@ ws://localhost:8003/ws/events
 ```
 
 Send JSON commands:
+
 ```json
 { "action": "ping" }
 { "action": "status", "thread_id": "scribe-PAT-001-abc12345" }
@@ -198,7 +202,7 @@ Receive real-time events: `CONNECTION_ESTABLISHED`, `PONG`, `THREAD_STATUS`, `ER
 
 ## MongoDB Telemetry Schema
 
-Every dispatch event writes to `vitality_ai.ai_telemetry`:
+Every dispatch event writes to `HMS_ai.ai_telemetry`:
 
 ```json
 {
@@ -217,17 +221,17 @@ Every dispatch event writes to `vitality_ai.ai_telemetry`:
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|---|---|---|
-| `LLM_PROVIDER` | `ollama` or `groq` | `ollama` |
-| `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
-| `OLLAMA_LLM_MODEL` | Ollama model name | `llama3.2:latest` |
-| `GROQ_API_KEY` | Groq cloud API key | — |
-| `GROQ_LLM_MODEL` | Groq model name | `llama-3.3-70b-versatile` |
-| `SARVAM_API_KEY` | Sarvam AI subscription key | — |
-| `SUPABASE_URL` | Supabase project URL | — |
-| `SUPABASE_KEY` | Supabase anon/service key | — |
-| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017` |
-| `MONGO_DB_NAME` | Database name | `vitality_ai` |
-| `PORT` | Service port | `8003` |
-| `JAVA_BACKEND_URL` | Java backend base URL | `http://localhost:9090` |
+| Variable           | Description                | Default                     |
+| ------------------ | -------------------------- | --------------------------- |
+| `LLM_PROVIDER`     | `ollama` or `groq`         | `ollama`                    |
+| `OLLAMA_BASE_URL`  | Ollama server URL          | `http://localhost:11434`    |
+| `OLLAMA_LLM_MODEL` | Ollama model name          | `llama3.2:latest`           |
+| `GROQ_API_KEY`     | Groq cloud API key         | —                           |
+| `GROQ_LLM_MODEL`   | Groq model name            | `llama-3.3-70b-versatile`   |
+| `SARVAM_API_KEY`   | Sarvam AI subscription key | —                           |
+| `SUPABASE_URL`     | Supabase project URL       | —                           |
+| `SUPABASE_KEY`     | Supabase anon/service key  | —                           |
+| `MONGO_URI`        | MongoDB connection string  | `mongodb://localhost:27017` |
+| `MONGO_DB_NAME`    | Database name              | `HMS_ai`                    |
+| `PORT`             | Service port               | `8003`                      |
+| `JAVA_BACKEND_URL` | Java backend base URL      | `http://localhost:9090`     |

@@ -23,6 +23,9 @@ import {
   Send,
   WifiOff,
   Stethoscope,
+  Upload,
+  FileAudio,
+  X,
 } from "lucide-react";
 import { pythonApi, ScribeDraftResponse } from "@/lib/pythonApi";
 
@@ -36,6 +39,7 @@ type RecordingState = "idle" | "recording" | "processing" | "done" | "error";
 
 export default function VoiceCheckInKioskPage() {
   const [selectedPreset, setSelectedPreset] = useState(PATIENT_PRESETS[0]);
+  const [uploadMode, setUploadMode] = useState<"record" | "upload">("record");
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [waveformBars, setWaveformBars] = useState<number[]>(Array(24).fill(10));
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -43,6 +47,11 @@ export default function VoiceCheckInKioskPage() {
   const [draft, setDraft] = useState<ScribeDraftResponse | null>(null);
   const [isApproving, setIsApproving] = useState(false);
   const [approvalResult, setApprovalResult] = useState<string | null>(null);
+
+  // WAV upload state
+  const [selectedWavFile, setSelectedWavFile] = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -116,14 +125,16 @@ export default function VoiceCheckInKioskPage() {
     }
   };
 
-  const uploadAndProcess = async (blob: Blob) => {
+  const uploadAndProcess = async (blob: Blob, filename?: string) => {
     try {
-      const ext = blob.type.includes("webm") ? "webm" : "wav";
+      const ext = filename
+        ? filename.split(".").pop() ?? "wav"
+        : blob.type.includes("webm") ? "webm" : "wav";
       const result = await pythonApi.uploadScribeAudio(
         selectedPreset.id,
         selectedPreset.email,
         blob,
-        `recording.${ext}`
+        filename ?? `recording.${ext}`
       );
       setDraft(result);
       setRecordingState("done");
@@ -152,6 +163,43 @@ export default function VoiceCheckInKioskPage() {
     setErrorMsg(null);
     setApprovalResult(null);
     setTimerSeconds(0);
+    setSelectedWavFile(null);
+  };
+
+  // ── WAV upload handlers ────────────────────────────────────────────────────
+  const validateAndSetFile = (file: File | null) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".wav")) {
+      setErrorMsg("Only .wav files are supported. Please select a valid WAV audio file.");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setErrorMsg("File is too large. Maximum supported size is 100 MB.");
+      return;
+    }
+    setErrorMsg(null);
+    setSelectedWavFile(file);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    validateAndSetFile(e.target.files?.[0] ?? null);
+    // reset so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    validateAndSetFile(e.dataTransfer.files?.[0] ?? null);
+  };
+
+  const handleProcessWav = async () => {
+    if (!selectedWavFile) return;
+    setRecordingState("processing");
+    setErrorMsg(null);
+    setDraft(null);
+    setApprovalResult(null);
+    await uploadAndProcess(selectedWavFile, selectedWavFile.name);
   };
 
   return (
@@ -226,7 +274,8 @@ export default function VoiceCheckInKioskPage() {
         {/* Left: Recording Controls */}
         <div className="lg:col-span-1 flex flex-col gap-5">
           {/* Mic Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center justify-center text-center gap-5 relative overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col gap-4 relative overflow-hidden">
+            {/* Card header + tab switcher */}
             <div className="flex items-center justify-between w-full border-b border-slate-50 pb-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Capture Terminal</span>
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-500 border border-slate-200">
@@ -234,65 +283,180 @@ export default function VoiceCheckInKioskPage() {
               </span>
             </div>
 
-            <div className="flex flex-col items-center gap-3 py-4">
-              {/* Mic Button */}
-              {recordingState === "idle" || recordingState === "error" ? (
-                <button
-                  onClick={startRecording}
-                  id="start-recording-btn"
-                  className="relative h-20 w-20 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100 hover:scale-[1.03] cursor-pointer flex items-center justify-center transition-all"
-                >
-                  <Mic className="w-8 h-8" />
-                </button>
-              ) : recordingState === "recording" ? (
-                <button
-                  onClick={stopRecording}
-                  id="stop-recording-btn"
-                  className="relative h-20 w-20 rounded-full bg-red-500 text-white shadow-lg shadow-red-200 scale-95 flex items-center justify-center transition-all cursor-pointer"
-                >
-                  <span className="absolute inset-0 rounded-full bg-red-400/30 animate-ping" />
-                  <MicOff className="w-8 h-8" />
-                </button>
-              ) : (
-                <div className="h-20 w-20 rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 animate-spin" />
+            {/* Mode tabs */}
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-lg p-1 self-center w-full">
+              <button
+                onClick={() => { setUploadMode("record"); reset(); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition ${
+                  uploadMode === "record"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Mic className="w-3.5 h-3.5" /> Live Record
+              </button>
+              <button
+                onClick={() => { setUploadMode("upload"); reset(); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition ${
+                  uploadMode === "upload"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Upload className="w-3.5 h-3.5" /> Upload WAV
+              </button>
+            </div>
+
+            {/* ── RECORD TAB ── */}
+            {uploadMode === "record" && (
+              <div className="flex flex-col items-center gap-3 py-2">
+                {recordingState === "idle" || recordingState === "error" ? (
+                  <button
+                    onClick={startRecording}
+                    id="start-recording-btn"
+                    className="relative h-20 w-20 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100 hover:scale-[1.03] cursor-pointer flex items-center justify-center transition-all"
+                  >
+                    <Mic className="w-8 h-8" />
+                  </button>
+                ) : recordingState === "recording" ? (
+                  <button
+                    onClick={stopRecording}
+                    id="stop-recording-btn"
+                    className="relative h-20 w-20 rounded-full bg-red-500 text-white shadow-lg shadow-red-200 scale-95 flex items-center justify-center transition-all cursor-pointer"
+                  >
+                    <span className="absolute inset-0 rounded-full bg-red-400/30 animate-ping" />
+                    <MicOff className="w-8 h-8" />
+                  </button>
+                ) : (
+                  <div className="h-20 w-20 rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1 text-center">
+                  <span className="text-sm font-semibold text-slate-900">
+                    {recordingState === "idle" && "Click microphone to start recording"}
+                    {recordingState === "recording" && "Recording… Click to stop"}
+                    {recordingState === "processing" && "AI pipeline processing…"}
+                    {recordingState === "done" && "Transcription complete ✓"}
+                    {recordingState === "error" && "Error — see details below"}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {recordingState === "recording"
+                      ? `Recording: ${formatTimer(timerSeconds)}`
+                      : "Speaks any language · auto-detected by Sarvam AI"}
+                  </span>
                 </div>
-              )}
 
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-900">
-                  {recordingState === "idle" && "Click microphone to start recording"}
-                  {recordingState === "recording" && "Recording… Click to stop"}
-                  {recordingState === "processing" && "AI pipeline processing…"}
-                  {recordingState === "done" && "Transcription complete ✓"}
-                  {recordingState === "error" && "Error — see details below"}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {recordingState === "recording"
-                    ? `Recording: ${formatTimer(timerSeconds)}`
-                    : "Supports any spoken language · WAV/WebM upload"}
-                </span>
+                {/* Waveform */}
+                <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
+                    <span>Waveform</span>
+                    <span className={recordingState === "recording" ? "text-red-500 font-bold" : "text-slate-400"}>
+                      {recordingState === "recording" ? "ACTIVE FEED" : "MUTED"}
+                    </span>
+                  </div>
+                  <div className="h-14 flex items-center justify-center gap-1">
+                    {waveformBars.map((h, i) => (
+                      <motion.div
+                        key={i}
+                        className={`w-1.5 rounded-full ${
+                          recordingState === "recording" ? "bg-red-500/80" : "bg-slate-300"
+                        }`}
+                        style={{ height: `${h}px` }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Waveform */}
-            <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3.5 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
-                <span>Waveform</span>
-                <span className={recordingState === "recording" ? "text-red-500 font-bold" : "text-slate-400"}>
-                  {recordingState === "recording" ? "ACTIVE FEED" : "MUTED"}
-                </span>
+            {/* ── UPLOAD TAB ── */}
+            {uploadMode === "upload" && (
+              <div className="flex flex-col gap-3">
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".wav,audio/wav,audio/x-wav"
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
+
+                {/* Drop zone */}
+                <div
+                  onClick={() => {
+                    if (recordingState !== "processing") fileInputRef.current?.click();
+                  }}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
+                  className={`relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 cursor-pointer transition-all ${
+                    isDragOver
+                      ? "border-blue-400 bg-blue-50/60"
+                      : selectedWavFile
+                      ? "border-emerald-300 bg-emerald-50/40"
+                      : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/30"
+                  }`}
+                >
+                  {selectedWavFile ? (
+                    <>
+                      <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center">
+                        <FileAudio className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 text-center">
+                        <span className="text-sm font-semibold text-slate-800 max-w-[180px] truncate">
+                          {selectedWavFile.name}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {(selectedWavFile.size / 1024 / 1024).toFixed(2)} MB · WAV
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedWavFile(null); }}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-slate-200 hover:bg-rose-100 text-slate-500 hover:text-rose-600 flex items-center justify-center transition"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
+                        <Upload className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 text-center">
+                        <span className="text-sm font-semibold text-slate-700">
+                          {isDragOver ? "Drop your WAV file here" : "Drag & drop or click to browse"}
+                        </span>
+                        <span className="text-xs text-slate-400">WAV format · Max 100 MB · Any language</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Process button */}
+                {recordingState === "processing" ? (
+                  <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-500 text-sm font-semibold">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sarvam AI transcribing…
+                  </div>
+                ) : (
+                  <button
+                    id="process-wav-btn"
+                    onClick={handleProcessWav}
+                    disabled={!selectedWavFile || recordingState === "done"}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition shadow-sm"
+                  >
+                    <FileAudio className="w-4 h-4" />
+                    {recordingState === "done" ? "Processed ✓" : "Process WAV File"}
+                  </button>
+                )}
+
+                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                  The file is sent to Sarvam AI for transcription, then structured as a SOAP note and indexed in ChromaDB for the combined report.
+                </p>
               </div>
-              <div className="h-14 flex items-center justify-center gap-1">
-                {waveformBars.map((h, i) => (
-                  <motion.div
-                    key={i}
-                    className={`w-1.5 rounded-full ${recordingState === "recording" ? "bg-red-500/80" : "bg-slate-300"}`}
-                    style={{ height: `${h}px` }}
-                  />
-                ))}
-              </div>
-            </div>
+            )}
 
             <div className="flex items-center justify-between w-full text-xs text-slate-400 border-t border-slate-50 pt-3">
               <span>Patient:</span>
@@ -370,17 +534,26 @@ export default function VoiceCheckInKioskPage() {
           {/* Empty state */}
           {(recordingState === "idle" || recordingState === "error") && !draft && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 flex flex-col items-center justify-center text-center gap-3 min-h-[350px]">
-              <Headphones className="w-10 h-10 text-slate-300" />
+              {uploadMode === "upload" ? (
+                <FileAudio className="w-10 h-10 text-slate-300" />
+              ) : (
+                <Headphones className="w-10 h-10 text-slate-300" />
+              )}
               <div className="flex flex-col gap-1">
-                <span className="font-semibold text-slate-700">No recording yet</span>
+                <span className="font-semibold text-slate-700">
+                  {uploadMode === "upload" ? "No file processed yet" : "No recording yet"}
+                </span>
                 <span className="text-sm text-slate-400 max-w-xs">
-                  Click the microphone to start recording a doctor-patient conversation. The AI will transcribe, structure, and draft a report.
+                  {uploadMode === "upload"
+                    ? "Upload a .wav recording of a doctor-patient session. Sarvam AI will transcribe, structure, and draft a report."
+                    : "Click the microphone to start recording a doctor-patient conversation. The AI will transcribe, structure, and draft a report."}
                 </span>
               </div>
               <div className="flex flex-col gap-2 text-xs text-slate-400 mt-2">
                 {[
-                  "Sarvam STT handles Hinglish, Hindi, English & more",
+                  "Sarvam STT auto-detects any spoken language",
                   "Generates structured SOAP note automatically",
+                  "Indexed in ChromaDB · available in Combined Report",
                   "Doctor approval dispatches the report by email",
                 ].map((hint, i) => (
                   <div key={i} className="flex items-center gap-2">

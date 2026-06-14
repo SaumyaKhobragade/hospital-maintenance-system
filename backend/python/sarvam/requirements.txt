@@ -1,5 +1,5 @@
 # ────────────────────────────────────────────────────────────
-# Vitality AI Sidecar — Python Dependencies
+# HMS AI Sidecar — Python Dependencies
 # Install: pip install -r requirements.txt
 # ────────────────────────────────────────────────────────────
 

@@ -69,7 +69,14 @@ Integrate the historical context with the new lab/imaging results. Explain how t
 ## 6. Actionable Care Plan & Next Steps
 Provide concrete, prioritized recommendations for the care team and the patient. Include any warnings or symptoms that require immediate follow-up.
 
-Be concise, medically precise, and objective. If no information is available for a particular section (e.g. no radiology reports exist in the context), state "No radiology reports available in records." under that section."""
+## 7. Voice Check-In Session Notes
+Review any doctor-patient conversation transcripts or structured SOAP notes derived from voice check-in sessions (these appear with source tags "voice_checkin_transcript" or "voice_checkin_soap_note" in the record metadata). Summarise:
+- Key patient-reported symptoms and concerns expressed during the session
+- Physician observations, examination findings, and clinical impressions from the conversation
+- Agreed treatment plan, medications discussed, and follow-up actions decided in the session
+If no voice session records exist, state "No voice check-in sessions recorded for this patient."
+
+Be concise, medically precise, and objective. If no information is available for a particular section (e.g. no radiology reports exist in the context), state \"No radiology reports available in records.\" under that section."""
             ),
             (
                 "user",
