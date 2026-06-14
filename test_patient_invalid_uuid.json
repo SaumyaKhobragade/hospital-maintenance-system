@@ -1,0 +1,7 @@
+{
+  "id": "a1111111-1111-1111-1111-111111111111",
+  "name": "Test Patient",
+  "age": 25,
+  "status": "Waiting",
+  "target_hospital_id": "H1"
+}

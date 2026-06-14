@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { MoreVertical, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { supabase } from "../lib/supabaseClient";
+import { useSseStats } from "../lib/SseContext";
 
 interface PatientRow {
   name: string;
@@ -19,22 +19,28 @@ const statusColor: Record<string, string> = {
 
 export function RecentPatients() {
   const [rows, setRows] = useState<PatientRow[]>([]);
+  const stats = useSseStats();
 
   useEffect(() => {
     const fetchRecent = async () => {
-      const { data } = await supabase.from("patients").select("*").order("created_at", { ascending: false }).limit(4);
-      if (data) {
-        const mapped = data.map((d: any) => ({
-          name: d.name || "Patient " + d.id.substring(0, 4),
-          time: d.created_at ? new Date(d.created_at).toLocaleTimeString() : "Just now",
-          status: d.status === "Waiting" ? "New" : "Returning",
-          avatar: d.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80"
-        }));
-        setRows(mapped);
+      try {
+        const res = await fetch("/api/db/patients");
+        const data: any[] = await res.json();
+        if (Array.isArray(data)) {
+          const mapped = data.slice(0, 4).map((d: any) => ({
+            name: d.name || "Patient " + d.id.substring(0, 4),
+            time: d.created_at ? new Date(d.created_at).toLocaleTimeString() : "Just now",
+            status: d.status === "Waiting" ? "New" : "Returning",
+            avatar: d.avatar || ""
+          }));
+          setRows(mapped);
+        }
+      } catch (err) {
+        console.error("RecentPatients fetch failed:", err);
       }
     };
     fetchRecent();
-  }, []);
+  }, [stats]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">

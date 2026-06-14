@@ -4,7 +4,6 @@ import { Fragment, useState, useEffect } from "react";
 const FragmentRow = Fragment;
 import { Download, RefreshCw, Search, ChevronDown, ChevronRight, Route, Flag } from "lucide-react";
 
-import { supabase } from "../../../lib/supabaseClient";
 import { useSseStats } from "../../../lib/SseContext";
 
 interface Decision {
@@ -44,44 +43,29 @@ export default function DecisionMonitor() {
   const stats = useSseStats();
 
   const fetchDecisions = async () => {
-    // 1. Fetch latest 50 decisions
-    const { data } = await supabase
-      .from("clinical_decisions")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) {
-      const mapped = data.map((d: any) => ({
-        id: "D-" + d.id.substring(0, 4),
-        patient: "PT-" + (d.patient_id?.substring(0, 4) || "Unknown"),
-        from: d.from_hospital || "Unknown",
-        to: d.to_hospital || "Unknown",
-        type: d.type || "Standard",
-        reason: d.reason || "Unknown reason",
-        time: d.created_at ? new Date(d.created_at).toLocaleTimeString() : "Just now",
-        status: d.status || "Pending",
-        confidence: d.confidence || 0,
-        policy: d.policy_used || "Unknown"
-      }));
-      setDecisions(mapped);
-    }
-
-    // 2. Fetch overall metrics from database
-    const { data: allDecisions } = await supabase
-      .from("clinical_decisions")
-      .select("status, confidence");
-
-    if (allDecisions) {
-      const total = allDecisions.length;
-      const totalWaitSaved = allDecisions.reduce((sum: number, d: any) => sum + ((d.confidence || 0) / 10), 0);
-      const avgWait = total > 0 ? (totalWaitSaved / total) : 0;
-      const failed = allDecisions.filter((d: any) => d.status?.toLowerCase() === "failed" || d.status?.toLowerCase() === "rejected").length;
-
-      setMetrics({
-        totalRedirects: total,
-        avgWaitSaved: avgWait,
-        failedRedirects: failed
-      });
+    try {
+      const res = await fetch("/api/db/decisions");
+      const json = await res.json();
+      if (json.decisions) {
+        const mapped = json.decisions.map((d: any) => ({
+          id: "D-" + d.id.substring(0, 4),
+          patient: "PT-" + (d.patient_id?.substring(0, 4) || "Unknown"),
+          from: d.from_hospital || "Unknown",
+          to: d.to_hospital || "Unknown",
+          type: d.type || "Standard",
+          reason: d.reason || "Unknown reason",
+          time: d.created_at ? new Date(d.created_at).toLocaleTimeString() : "Just now",
+          status: d.status || "Pending",
+          confidence: d.confidence || 0,
+          policy: d.policy_used || "Unknown"
+        }));
+        setDecisions(mapped);
+      }
+      if (json.metrics) {
+        setMetrics(json.metrics);
+      }
+    } catch (err) {
+      console.error("Failed to fetch decisions:", err);
     }
   };
 
@@ -201,7 +185,7 @@ export default function DecisionMonitor() {
           </tbody>
         </table>
         <div className="p-4 flex items-center justify-between text-sm">
-          <span className="text-slate-500">Showing 5 of 1,284</span>
+          <span className="text-slate-500">Showing {Math.min(decisions.length, 50)} of {metrics.totalRedirects.toLocaleString()}</span>
           <div className="flex gap-2">
             <button className="px-3 py-1.5 rounded-lg border border-slate-200">Prev</button>
             <button className="px-3 py-1.5 rounded-lg border border-slate-200">Next</button>
