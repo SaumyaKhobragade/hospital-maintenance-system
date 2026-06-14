@@ -37,3 +37,18 @@ next-env.d.ts
 
 prd.md
 .idea/
+
+# Python
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# SQLite / Local Database
+*.sqlite3
+chroma.sqlite3
+**/chroma_db/

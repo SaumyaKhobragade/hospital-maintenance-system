@@ -28,6 +28,17 @@ from services.scribe_workflow import ScribeWorkflowGraph
 from services.report_workflow import ReportWorkflowGraph
 from services.combined_report import CombinedReportService
 
+import sys
+from pathlib import Path
+image_video_backend_dir = Path(__file__).resolve().parent.parent / "imageVideoBackend"
+if str(image_video_backend_dir) not in sys.path:
+    sys.path.append(str(image_video_backend_dir))
+
+from models.events import DistressEvent, AnalysisResponse
+from models.injury import InjuryAnalysisResult, ISAHealthResponse
+from image_video_services.image_detection import detect_image, get_results, clear_results
+from image_video_services.video_detection import detect_video, get_events, clear_events
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -169,7 +180,7 @@ async def health_check():
 async def ingest_patient_history(
     patient_id: str,
     text: Optional[str] = Form(None),
-    files: Optional[List[UploadFile]] = File(None),
+    files: List[UploadFile] = File(default=[]),
     # Optional patient metadata fields – saved to MongoDB patient registry
     name: Optional[str] = Form(None),
     first_name: Optional[str] = Form(None),
@@ -179,6 +190,7 @@ async def ingest_patient_history(
     address: Optional[str] = Form(None),
     blood_group: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
+
 ):
     """
     Ingests plain text and uploaded files for a patient, chunking and storing them in ChromaDB.
@@ -541,7 +553,7 @@ async def generate_report(body: ReportRequest):
 @app.post("/api/patients/{patient_id}/combined-report", response_model=CombinedReportResponse)
 async def generate_combined_report_route(
     patient_id: str,
-    files: Optional[List[UploadFile]] = File(None),
+    files: List[UploadFile] = File(default=[]),
     patient_email: Optional[str] = Form(None),
     additional_context: Optional[str] = Form(None),
 ):
@@ -709,7 +721,172 @@ async def upload_scribe_audio(
     )
 
 
+# ── Image and Video Detection Endpoints ────────────────────────────────────────
+
+@app.post("/api/image/analyze", response_model=InjuryAnalysisResult, tags=["Injury Analysis"])
+async def analyze_injury_image(image: UploadFile = File(...)):
+    """
+    Analyze an injury image for severity assessment.
+    Upload an image (JPG/PNG) of a visible external injury.
+    """
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    file_ext = Path(image.filename).suffix.lower()
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+        )
+    
+    import tempfile
+    import os
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+        try:
+            content = await image.read()
+            tmp_file.write(content)
+            tmp_file.flush()
+            
+            # Use service layer
+            result = detect_image(tmp_file.name)
+            return result
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error("Error analyzing image: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error analyzing image: {str(e)}")
+        finally:
+            try:
+                os.unlink(tmp_file.name)
+            except Exception:
+                pass
+
+
+@app.post("/api/image/analyze-local", response_model=InjuryAnalysisResult, tags=["Injury Analysis"])
+async def analyze_local_injury_image(image_path: str):
+    """
+    Analyze an injury image from local filesystem.
+    """
+    path = Path(image_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Image file not found: {image_path}")
+    
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    if path.suffix.lower() not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Invalid image format")
+        
+    try:
+        result = detect_image(str(path))
+        return result
+    except Exception as e:
+        logger.error("Error analyzing local image: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error analyzing image: {str(e)}")
+
+
+@app.get("/api/image/results", response_model=List[InjuryAnalysisResult], tags=["Injury Analysis"])
+async def get_injury_results(limit: int = 10):
+    """
+    Get recent injury analysis results.
+    """
+    return get_results(limit)
+
+
+@app.delete("/api/image/results", tags=["Injury Analysis"])
+async def clear_injury_results():
+    """
+    Clear all stored injury analysis results.
+    """
+    return clear_results()
+
+
+@app.post("/api/video/analyze", response_model=AnalysisResponse, tags=["Video Analysis"])
+async def analyze_video_feed(video: UploadFile = File(...)):
+    """
+    Analyze a video file for behavioral distress signals.
+    """
+    allowed_extensions = {".mp4", ".avi", ".mov", ".mkv"}
+    file_ext = Path(video.filename).suffix.lower()
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+        )
+        
+    import tempfile
+    import os
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+        try:
+            content = await video.read()
+            tmp_file.write(content)
+            tmp_file.flush()
+            
+            # Use service layer
+            response = detect_video(tmp_file.name)
+            return response
+        except Exception as e:
+            logger.error("Error analyzing video: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+        finally:
+            try:
+                os.unlink(tmp_file.name)
+            except Exception:
+                pass
+
+
+@app.post("/api/video/analyze-local", response_model=AnalysisResponse, tags=["Video Analysis"])
+async def analyze_local_video_feed(video_path: str):
+    """
+    Analyze a video file from local filesystem.
+    """
+    path = Path(video_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Video file not found: {video_path}")
+        
+    if path.suffix.lower() not in {".mp4", ".avi", ".mov", ".mkv"}:
+        raise HTTPException(status_code=400, detail="Invalid video format")
+        
+    try:
+        response = detect_video(str(path))
+        return response
+    except Exception as e:
+        logger.error("Error analyzing local video: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+
+
+@app.get("/api/video/events", response_model=List[DistressEvent], tags=["Video Analysis"])
+async def get_video_distress_events():
+    """
+    Get all stored distress events.
+    """
+    return get_events()
+
+
+@app.delete("/api/video/events", tags=["Video Analysis"])
+async def clear_video_distress_events():
+    """
+    Clear all stored distress events.
+    """
+    return clear_events()
+
+
+@app.get("/api/image/health", response_model=ISAHealthResponse, tags=["Injury Analysis"])
+async def get_isa_health():
+    """
+    Health check for ISA module.
+    """
+    from core.injury_analyzer import get_analyzer
+    analyzer = get_analyzer()
+    return ISAHealthResponse(
+        status="healthy",
+        modelLoaded=analyzer.is_model_loaded(),
+        version="1.0.0"
+    )
+
+
 # ── Shutdown Hook ─────────────────────────────────────────────────────────────
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
