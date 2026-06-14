@@ -124,6 +124,7 @@ def execute_dispatch_and_telemetry(state: Dict[str, Any]) -> Dict[str, Any]:
     patient_email = state.get("patient_email", "")
     soap_note = state.get("structured_soap_note", "")
     report_draft = state.get("patient_report_draft", "")
+    raw_transcript = state.get("raw_transcript", "")
 
     logger.info("[SCRIBE:Node4] Executing dispatch  patient=%s  email=%s", patient_id, patient_email)
 
@@ -143,6 +144,36 @@ def execute_dispatch_and_telemetry(state: Dict[str, Any]) -> Dict[str, Any]:
             "email_receipt": receipt,
         },
     )
+
+    # ─── Store transcription data in ChromaDB ─────────────────────────────
+    try:
+        from services.vector_store import VectorStoreService
+        from services.document_processor import DocumentProcessor
+
+        vector_store = VectorStoreService()
+        doc_processor = DocumentProcessor()
+
+        # Index raw transcript
+        if raw_transcript and raw_transcript.strip():
+            transcript_metadata = {
+                "source": "voice_checkin_transcript",
+                "patient_id": patient_id,
+            }
+            chunks = doc_processor.chunk_text(raw_transcript, transcript_metadata)
+            vector_store.add_patient_documents(patient_id, chunks)
+            logger.info("[SCRIBE:Node4] Successfully indexed voice check-in transcript in ChromaDB")
+
+        # Index structured SOAP note
+        if soap_note and soap_note.strip():
+            soap_metadata = {
+                "source": "voice_checkin_soap_note",
+                "patient_id": patient_id,
+            }
+            chunks = doc_processor.chunk_text(soap_note, soap_metadata)
+            vector_store.add_patient_documents(patient_id, chunks)
+            logger.info("[SCRIBE:Node4] Successfully indexed voice check-in SOAP note in ChromaDB")
+    except Exception as e:
+        logger.error("[SCRIBE:Node4] Failed to index scribe data in ChromaDB: %s", e)
 
     return {"is_approved": True}
 

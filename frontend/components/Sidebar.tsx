@@ -16,6 +16,7 @@ import {
   Terminal,
   UsersRound,
   ScanSearch,
+  FileText,
   LogOut,
   ChevronLeft
 } from "lucide-react";
@@ -52,6 +53,7 @@ const navigationGroups: SidebarGroup[] = [
       { icon: BrainCircuit, label: "AI Clinical Summary", to: "/dashboard/ai-clinical-summary" },
       { icon: Mic, label: "Voice Check-In", to: "/dashboard/voice-checkin" },
       { icon: ScanSearch, label: "RAG History", to: "/dashboard/rag" },
+      { icon: FileText, label: "Combined Report", to: "/dashboard/combined-report" },
       { icon: Terminal, label: "AI Telemetry", to: "/dashboard/telemetry" }
     ]
   },

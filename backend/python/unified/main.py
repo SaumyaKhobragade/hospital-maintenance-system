@@ -10,13 +10,16 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+import os
+import tempfile
 import uvicorn
 from fastapi import FastAPI, HTTPException, File, Form, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import config
-from db import fire_telemetry, close_mongo_client, get_mongo_client
+from db import fire_telemetry, close_mongo_client, get_mongo_client, get_telemetry_collection
 from services.document_processor import DocumentProcessor
 from services.vector_store import VectorStoreService
 from services.summary_agent import SummaryAgent
@@ -225,11 +228,38 @@ async def ingest_patient_history(
     }
 
 
+@app.get("/api/patients/{patient_id}/chunks")
+def get_patient_chunks(
+    patient_id: str,
+    query: str = "medical history symptoms allergies medications",
+    k: int = 20,
+):
+    """
+    Returns all stored ChromaDB chunks for a patient as raw documents.
+    Supports an optional semantic query to re-rank which chunks surface first.
+    k: max number of chunks to return (default 20).
+    """
+    retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, query=query, k=k)
+
+    if not retrieved_docs:
+        return {
+            "patient_id": patient_id,
+            "chunks": [],
+            "count": 0,
+            "message": "No records found. Register this patient first via Add Patient.",
+        }
+
+    return {
+        "patient_id": patient_id,
+        "chunks": retrieved_docs,   # [{"page_content": str, "metadata": dict}, ...]
+        "count": len(retrieved_docs),
+    }
+
+
 @app.get("/api/patients/{patient_id}/retrieve")
 def get_patient_details(patient_id: str):
+    """Backwards-compat alias — returns first chunk only."""
     retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, k=8)
-
-    # If no documents are found, return empty fields but don't error out
     if not retrieved_docs:
         return SummaryResponse(
             patient_id=patient_id,
@@ -237,10 +267,9 @@ def get_patient_details(patient_id: str):
             allergies=["None documented"],
             current_medications=["None documented"],
             past_surgeries=["None documented"],
-            clinical_summary="No medical records found for this patient. Please ensure history was submitted correctly.",
+            clinical_summary="No medical records found for this patient.",
             retrieved_snippets=[],
         )
-
     return retrieved_docs[0]
 
 
@@ -548,6 +577,78 @@ async def generate_combined_report_route(
         combined_report=combined_report_text,
         dispatch_receipt=dispatch_receipt,
         status="DISPATCHED" if dispatch_receipt and "SUCCESS" in dispatch_receipt else "GENERATED"
+    )
+
+
+# ── Telemetry Endpoint ───────────────────────────────────────────────────────
+
+@app.get("/api/telemetry")
+async def get_telemetry_logs(limit: int = 50):
+    """
+    Returns the latest AI inference telemetry events from MongoDB,
+    sorted newest-first. Limit defaults to 50.
+    """
+    try:
+        collection = get_telemetry_collection()
+        cursor = collection.find(
+            {},
+            {"_id": 0},  # exclude Mongo ObjectId for JSON serialization
+        ).sort("timestamp", -1).limit(limit)
+        docs = await cursor.to_list(length=limit)
+        return {"events": docs, "count": len(docs)}
+    except Exception as exc:
+        logger.error("Failed to fetch telemetry logs: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch telemetry logs: {str(exc)}")
+
+
+# ── Ambient Scribe: Browser Audio Upload Endpoint ─────────────────────────────
+
+@app.post("/scribe/upload", response_model=ScribeDraftResponse)
+async def upload_scribe_audio(
+    patient_id: str = Form(...),
+    patient_email: str = Form(...),
+    audio: UploadFile = File(...),
+    thread_id: Optional[str] = Form(None),
+):
+    """
+    Accept an audio file recorded in the browser (WAV/WebM/MP3),
+    save it to a temp file, then run the full scribe pipeline.
+    Returns transcript, SOAP note, and patient report draft.
+    """
+    thread_id = thread_id or f"scribe-{patient_id}-{uuid.uuid4().hex[:8]}"
+
+    # Save uploaded audio to a temp file
+    suffix = "." + (audio.filename.rsplit(".", 1)[-1] if audio.filename and "." in audio.filename else "wav")
+    tmp_path: Optional[str] = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await audio.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        logger.info("[Scribe Upload] Saved audio to %s for patient %s", tmp_path, patient_id)
+
+        state = await scribe_graph.invoke_scribe_pipeline(
+            thread_id=thread_id,
+            patient_id=patient_id,
+            patient_email=patient_email,
+            audio_file_path=tmp_path,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=f"Audio file error: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Scribe upload pipeline failed: {exc}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+    return ScribeDraftResponse(
+        thread_id=thread_id,
+        patient_id=state.get("patient_id", patient_id),
+        patient_email=state.get("patient_email", patient_email),
+        raw_transcript=state.get("raw_transcript", ""),
+        structured_soap_note=state.get("structured_soap_note", ""),
+        patient_report_draft=state.get("patient_report_draft", ""),
     )
 
 
