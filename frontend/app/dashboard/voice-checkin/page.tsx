@@ -53,6 +53,56 @@ export default function VoiceCheckInKioskPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Dynamically loaded patients (merged with presets)
+  const [allPatients, setAllPatients] = useState<any[]>(PATIENT_PRESETS);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [patientSearchQuery, setPatientSearchQuery] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const res = await pythonApi.listPatients();
+        if (res.patients && res.patients.length > 0) {
+          const mongoPatients = res.patients.map((p) => ({
+            id: p.id,
+            name: p.name || "Unknown Patient",
+            email:
+              p.email ||
+              `${(p.name || "patient").toLowerCase().replace(/\s+/g, ".")}@testmail.app`,
+          }));
+          // Merge presets first (they take priority for known demo IDs), then add MongoDB patients
+          const merged = [...PATIENT_PRESETS];
+          mongoPatients.forEach((mp) => {
+            if (!merged.some((ep) => ep.id === mp.id)) {
+              merged.push(mp);
+            }
+          });
+          setAllPatients(merged);
+        }
+      } catch (err) {
+        // MongoDB unavailable or no patients yet — fall back to presets silently
+        console.warn("[Voice Check-In] Could not load patients from MongoDB registry:", err);
+      }
+    };
+    fetchPatients();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredDropdownPatients = allPatients.filter((p) =>
+    p.name.toLowerCase().includes(patientSearchQuery.toLowerCase()) ||
+    p.id.toLowerCase().includes(patientSearchQuery.toLowerCase())
+  );
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -224,22 +274,57 @@ export default function VoiceCheckInKioskPage() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative" ref={dropdownRef}>
           <span className="text-xs text-slate-400 font-semibold sm:text-right">Select Patient:</span>
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-lg p-1">
-            {PATIENT_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => { setSelectedPreset(p); reset(); }}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
-                  selectedPreset.id === p.id
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {p.name.split(" ")[0]}
-              </button>
-            ))}
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100/70 hover:border-slate-300 text-xs font-semibold text-slate-800 transition min-w-[220px] text-left cursor-pointer"
+            >
+              <span className="truncate max-w-[170px]">
+                {selectedPreset.name} ({selectedPreset.id.length > 8 ? `${selectedPreset.id.slice(0, 8)}...` : selectedPreset.id})
+              </span>
+              <span className="text-[10px] text-slate-400">▼</span>
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute right-0 sm:left-0 mt-1.5 w-72 bg-white rounded-xl shadow-lg border border-slate-200/80 z-50 p-2.5 flex flex-col gap-2">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search by ID or name..."
+                    value={patientSearchQuery}
+                    onChange={(e) => setPatientSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-2.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs outline-none focus:bg-white focus:border-blue-500 transition text-slate-800"
+                  />
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-450 text-xs">🔍</span>
+                </div>
+                <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5">
+                  {filteredDropdownPatients.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setSelectedPreset(p);
+                        setIsDropdownOpen(false);
+                        setPatientSearchQuery("");
+                        reset();
+                      }}
+                      className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition flex flex-col gap-0.5 cursor-pointer ${
+                        selectedPreset.id === p.id
+                          ? "bg-blue-50 text-blue-700 font-semibold"
+                          : "text-slate-650 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="font-semibold truncate">{p.name}</span>
+                      <span className="font-mono text-[9px] text-slate-450 truncate">ID: {p.id}</span>
+                    </button>
+                  ))}
+                  {filteredDropdownPatients.length === 0 && (
+                    <div className="text-center py-4 text-xs text-slate-400">No patients found</div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

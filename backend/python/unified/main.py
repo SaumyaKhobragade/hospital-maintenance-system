@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import config
-from db import fire_telemetry, close_mongo_client, get_mongo_client, get_telemetry_collection
+from db import fire_telemetry, close_mongo_client, get_mongo_client, get_telemetry_collection, get_patients_collection
 from services.document_processor import DocumentProcessor
 from services.vector_store import VectorStoreService
 from services.summary_agent import SummaryAgent
@@ -170,9 +170,19 @@ async def ingest_patient_history(
     patient_id: str,
     text: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),
+    # Optional patient metadata fields – saved to MongoDB patient registry
+    name: Optional[str] = Form(None),
+    first_name: Optional[str] = Form(None),
+    last_name: Optional[str] = Form(None),
+    dob: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    address: Optional[str] = Form(None),
+    blood_group: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
 ):
     """
     Ingests plain text and uploaded files for a patient, chunking and storing them in ChromaDB.
+    Optionally upserts the patient's basic metadata (name, dob, etc.) into MongoDB.
     """
     all_chunks = []
 
@@ -221,11 +231,58 @@ async def ingest_patient_history(
             status_code=500, detail=f"Failed to index medical records: {str(e)}"
         )
 
+    # 4. Upsert patient metadata into MongoDB patients registry
+    resolved_name = (
+        name
+        or f"{(first_name or '').strip()} {(last_name or '').strip()}".strip()
+        or None
+    )
+    if resolved_name:
+        try:
+            patients_col = get_patients_collection()
+            patient_doc = {
+                "id": patient_id,
+                "name": resolved_name,
+                "first_name": first_name or "",
+                "last_name": last_name or "",
+                "dob": dob or "",
+                "phone": phone or "",
+                "address": address or "",
+                "blood_group": blood_group or "",
+                "email": email or "",
+                "registered_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await patients_col.replace_one({"id": patient_id}, patient_doc, upsert=True)
+            logger.info("[MongoDB] Patient registry upserted: %s (%s)", patient_id, resolved_name)
+        except Exception as e:
+            # Non-fatal: registry write failure should not block ChromaDB ingestion
+            logger.warning("[MongoDB] Failed to upsert patient registry: %s", e)
+
     return {
         "status": "success",
         "message": f"Successfully ingested {len(all_chunks)} chunks of medical history for patient {patient_id}.",
         "chunks_count": len(all_chunks),
+        "patient_id": patient_id,
+        "patient_name": resolved_name,
     }
+
+
+# ── Patient Registry Endpoint ─────────────────────────────────────────────────
+
+@app.get("/api/patients")
+async def list_all_patients():
+    """
+    Returns the list of all registered patients from MongoDB.
+    Each document contains at minimum: id, name, dob, phone, blood_group, email.
+    """
+    try:
+        patients_col = get_patients_collection()
+        cursor = patients_col.find({}, {"_id": 0}).sort("registered_at", -1)
+        patients = await cursor.to_list(length=1000)
+        return {"patients": patients, "count": len(patients)}
+    except Exception as exc:
+        logger.error("[MongoDB] Failed to list patients: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch patient registry: {str(exc)}")
 
 
 @app.get("/api/patients/{patient_id}/chunks")

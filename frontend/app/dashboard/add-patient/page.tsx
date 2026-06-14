@@ -86,7 +86,20 @@ export default function AddPatient() {
 
     try {
       const historyText = buildHistoryText();
-      const res = await pythonApi.ingestHistory(patientId, historyText, files.length ? files : undefined);
+      const res = await pythonApi.ingestHistory(
+        patientId,
+        historyText,
+        files.length ? files : undefined,
+        {
+          first_name: firstName,
+          last_name: lastName,
+          name: `${firstName} ${lastName}`.trim(),
+          dob,
+          phone,
+          address,
+          blood_group: bloodGroup,
+        }
+      );
       setChunksCount(res.chunks_count);
       setSubmitState("success");
       setSubmitMsg(`Patient ${patientId} registered and indexed into ChromaDB (${res.chunks_count} chunks).`);

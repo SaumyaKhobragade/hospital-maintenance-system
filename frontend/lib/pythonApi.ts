@@ -96,6 +96,25 @@ export interface TelemetryResponse {
   count: number;
 }
 
+/** A patient document as stored in MongoDB via the /api/patients registry. */
+export interface PatientRecord {
+  id: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  dob?: string;
+  phone?: string;
+  address?: string;
+  blood_group?: string;
+  email?: string;
+  registered_at?: string;
+}
+
+export interface PatientListResponse {
+  patients: PatientRecord[];
+  count: number;
+}
+
 // ─── Internal Helpers ─────────────────────────────────────────────────────────
 
 async function pyGet<T>(path: string): Promise<T> {
@@ -142,16 +161,37 @@ export const pythonApi = {
 
   /**
    * Ingest patient history as text and/or file uploads.
-   * files: array of File objects from a file input.
+   * Optionally include patient metadata (name, dob, etc.) to persist
+   * the patient's record in the MongoDB registry.
    */
   ingestHistory: (
     patientId: string,
     text?: string,
-    files?: File[]
+    files?: File[],
+    metadata?: {
+      name?: string;
+      first_name?: string;
+      last_name?: string;
+      dob?: string;
+      phone?: string;
+      address?: string;
+      blood_group?: string;
+      email?: string;
+    }
   ): Promise<IngestHistoryResponse> => {
     const form = new FormData();
     if (text) form.append("text", text);
     if (files) files.forEach((f) => form.append("files", f));
+    if (metadata) {
+      if (metadata.name) form.append("name", metadata.name);
+      if (metadata.first_name) form.append("first_name", metadata.first_name);
+      if (metadata.last_name) form.append("last_name", metadata.last_name);
+      if (metadata.dob) form.append("dob", metadata.dob);
+      if (metadata.phone) form.append("phone", metadata.phone);
+      if (metadata.address) form.append("address", metadata.address);
+      if (metadata.blood_group) form.append("blood_group", metadata.blood_group);
+      if (metadata.email) form.append("email", metadata.email);
+    }
     return pyPostForm<IngestHistoryResponse>(
       `/api/patients/${patientId}/history`,
       form
@@ -240,4 +280,13 @@ export const pythonApi = {
    */
   getTelemetryLogs: (limit = 50) =>
     pyGet<TelemetryResponse>(`/api/telemetry?limit=${limit}`),
+
+  // ── Patient Registry ─────────────────────────────────────────────────────
+
+  /**
+   * Fetch all registered patients from the MongoDB patient registry.
+   * Returns an empty list if MongoDB is unavailable.
+   */
+  listPatients: () =>
+    pyGet<PatientListResponse>("/api/patients"),
 };

@@ -20,13 +20,15 @@ import {
 } from "lucide-react";
 import { pythonApi, SummaryResponse, RiskResponse } from "@/lib/pythonApi";
 
-const PATIENTS = [
-  { id: "PT-9042", name: "Sarah Jenkins", age: 62, bloodGroup: "A+" },
-  { id: "PT-7719", name: "Robert Chen", age: 45, bloodGroup: "O-" },
-  { id: "PT-5521", name: "Elena Rostova", age: 58, bloodGroup: "B-" },
+// Fallback patient presets shown until the MongoDB registry responds
+const PATIENT_PRESETS = [
+  { id: "PT-9042", name: "Sarah Jenkins", blood_group: "A+" },
+  { id: "PT-7719", name: "Robert Chen", blood_group: "O-" },
+  { id: "PT-5521", name: "Elena Rostova", blood_group: "B-" },
 ];
 
 export default function AIClinicalSummaryPage() {
+  const [allPatients, setAllPatients] = useState(PATIENT_PRESETS);
   const [selectedPatientId, setSelectedPatientId] = useState("PT-9042");
   const [isProcessing, setIsProcessing] = useState(false);
   const [pipelineProgress, setPipelineProgress] = useState(0);
@@ -35,7 +37,34 @@ export default function AIClinicalSummaryPage() {
   const [risks, setRisks] = useState<RiskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const activePatient = PATIENTS.find((p) => p.id === selectedPatientId) || PATIENTS[0];
+  const activePatient = allPatients.find((p) => p.id === selectedPatientId) || allPatients[0];
+
+  // Load patient list from MongoDB registry on mount
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const res = await pythonApi.listPatients();
+        if (res.patients && res.patients.length > 0) {
+          const mongoPatients = res.patients.map((p) => ({
+            id: p.id,
+            name: p.name,
+            blood_group: p.blood_group || "",
+          }));
+          // Merge: presets first (stable demo IDs), then any additional MongoDB patients
+          const merged = [...PATIENT_PRESETS];
+          mongoPatients.forEach((mp) => {
+            if (!merged.some((ep) => ep.id === mp.id)) {
+              merged.push(mp);
+            }
+          });
+          setAllPatients(merged);
+        }
+      } catch {
+        // Fall back silently to presets if backend is unreachable
+      }
+    };
+    loadPatients();
+  }, []);
 
   const runPipeline = async () => {
     setIsProcessing(true);
@@ -114,8 +143,8 @@ export default function AIClinicalSummaryPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1">
-            {PATIENTS.map((p) => (
+          <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1 flex-wrap">
+            {allPatients.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setSelectedPatientId(p.id)}
