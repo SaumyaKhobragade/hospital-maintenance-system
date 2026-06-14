@@ -5,7 +5,7 @@ Feature 2: Automated Patient Report & Mailing Service
 """
 
 from __future__ import annotations
-
+from typing import Optional
 import logging
 from typing import Any, Dict, TypedDict
 
