@@ -5,6 +5,7 @@ import com.example.HMS.model.Patient;
 import com.example.HMS.model.Department;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.*;
 
@@ -193,6 +194,7 @@ public class OrchestratorService {
         return hospitalService.getAllHospitals();
     }
 
+    @Cacheable("cityStats")
     public Map<String, Object> getCityStats() {
         Map<String, Object> stats = new HashMap<>();
         Collection<Hospital> hospitals = getAllHospitals();

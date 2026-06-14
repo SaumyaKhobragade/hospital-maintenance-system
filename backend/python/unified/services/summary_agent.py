@@ -3,8 +3,6 @@ from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END
 from langchain_core.prompts import ChatPromptTemplate
 import config
-from langchain_groq import ChatGroq
-from langchain_ollama import ChatOllama
 
 # Pydantic schemas for structured output
 class ClinicalFacts(BaseModel):
@@ -30,20 +28,33 @@ class AgentState(TypedDict):
 
 class SummaryAgent:
     def __init__(self):
+        self.llm = None
         if config.LLM_PROVIDER == "ollama":
-            self.llm = ChatOllama(
-                model=config.OLLAMA_LLM_MODEL,
-                base_url=config.OLLAMA_BASE_URL,
-                temperature=0.2
-            )
-            print(f"[OK] SummaryAgent: Initialized ChatOllama with {config.OLLAMA_LLM_MODEL}")
+            try:
+                from langchain_ollama import ChatOllama
+
+                self.llm = ChatOllama(
+                    model=config.OLLAMA_LLM_MODEL,
+                    base_url=config.OLLAMA_BASE_URL,
+                    temperature=0.2,
+                )
+                print(f"[OK] SummaryAgent: Initialized ChatOllama with {config.OLLAMA_LLM_MODEL}")
+            except Exception as exc:
+                print(f"[WARN] SummaryAgent: Ollama unavailable ({exc}); using fallback mode")
+        elif config.GROQ_API_KEY:
+            try:
+                from langchain_groq import ChatGroq
+
+                self.llm = ChatGroq(
+                    model=config.LLM_MODEL_NAME,
+                    groq_api_key=config.GROQ_API_KEY,
+                    temperature=0.2,
+                )
+                print(f"[OK] SummaryAgent: Initialized ChatGroq with {config.LLM_MODEL_NAME}")
+            except Exception as exc:
+                print(f"[WARN] SummaryAgent: Groq unavailable ({exc}); using fallback mode")
         else:
-            self.llm = ChatGroq(
-                model=config.LLM_MODEL_NAME,
-                groq_api_key=config.GROQ_API_KEY,
-                temperature=0.2
-            )
-            print(f"[OK] SummaryAgent: Initialized ChatGroq with {config.LLM_MODEL_NAME}")
+            print("[WARN] SummaryAgent: No live LLM configured; using fallback mode")
 
         self._build_graph()
 
@@ -79,6 +90,16 @@ class SummaryAgent:
             ("user", "Medical Records:\n{context}\n\nExtract the clinical facts:")
         ])
         
+        if not self.llm:
+            return {
+                "extracted_facts": {
+                    "chronic_conditions": ["Hypertension (Mock)"],
+                    "allergies": ["Penicillin (Mock)"],
+                    "current_medications": ["Lisinopril 10mg (Mock)"],
+                    "past_surgeries": ["Appendectomy (Mock)"],
+                }
+            }
+
         # Use structured LLM binding
         structured_llm = self.llm.with_structured_output(ClinicalFacts)
         chain = prompt | structured_llm

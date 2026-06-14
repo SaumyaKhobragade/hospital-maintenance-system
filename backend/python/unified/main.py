@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 import config
 from db import fire_telemetry, close_mongo_client, get_mongo_client, get_telemetry_collection
+from db.redis_cache import cache_delete_pattern, cache_get, cache_set, close_redis_client
 from services.document_processor import DocumentProcessor
 from services.vector_store import VectorStoreService
 from services.summary_agent import SummaryAgent
@@ -221,6 +222,7 @@ async def ingest_patient_history(
             status_code=500, detail=f"Failed to index medical records: {str(e)}"
         )
 
+    await cache_delete_pattern(f"patient:{patient_id}:*")
     return {
         "status": "success",
         "message": f"Successfully ingested {len(all_chunks)} chunks of medical history for patient {patient_id}.",
@@ -229,7 +231,7 @@ async def ingest_patient_history(
 
 
 @app.get("/api/patients/{patient_id}/chunks")
-def get_patient_chunks(
+async def get_patient_chunks(
     patient_id: str,
     query: str = "medical history symptoms allergies medications",
     k: int = 20,
@@ -239,26 +241,38 @@ def get_patient_chunks(
     Supports an optional semantic query to re-rank which chunks surface first.
     k: max number of chunks to return (default 20).
     """
+    cache_key = f"patient:{patient_id}:chunks:{query}:{k}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, query=query, k=k)
 
     if not retrieved_docs:
-        return {
+        result = {
             "patient_id": patient_id,
             "chunks": [],
             "count": 0,
             "message": "No records found. Register this patient first via Add Patient.",
         }
+        await cache_set(cache_key, result)
+        return result
 
-    return {
+    result = {
         "patient_id": patient_id,
         "chunks": retrieved_docs,   # [{"page_content": str, "metadata": dict}, ...]
         "count": len(retrieved_docs),
     }
+    await cache_set(cache_key, result)
+    return result
 
 
 @app.get("/api/patients/{patient_id}/retrieve")
-def get_patient_details(patient_id: str):
+async def get_patient_details(patient_id: str):
     """Backwards-compat alias — returns first chunk only."""
+    cache_key = f"patient:{patient_id}:retrieve"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, k=8)
     if not retrieved_docs:
         return SummaryResponse(
@@ -270,15 +284,21 @@ def get_patient_details(patient_id: str):
             clinical_summary="No medical records found for this patient.",
             retrieved_snippets=[],
         )
-    return retrieved_docs[0]
+    result = retrieved_docs[0]
+    await cache_set(cache_key, result)
+    return result
 
 
 @app.get("/api/patients/{patient_id}/summary", response_model=SummaryResponse)
-def get_patient_summary(patient_id: str):
+async def get_patient_summary(patient_id: str):
     """
     Retrieves the patient's records, runs the LangGraph summary agent, and returns the structured summary.
     """
     try:
+        cache_key = f"patient:{patient_id}:summary"
+        cached = await cache_get(cache_key)
+        if cached is not None:
+            return cached
         # 1. Retrieve patient documents from ChromaDB
         retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, k=8)
 
@@ -300,7 +320,7 @@ def get_patient_summary(patient_id: str):
         # 3. Extract source text snippets for doctor reference
         snippets = [doc["page_content"] for doc in retrieved_docs]
 
-        return SummaryResponse(
+        result = SummaryResponse(
             patient_id=patient_id,
             chronic_conditions=agent_output.chronic_conditions,
             allergies=agent_output.allergies,
@@ -309,6 +329,8 @@ def get_patient_summary(patient_id: str):
             clinical_summary=agent_output.clinical_summary,
             retrieved_snippets=snippets,
         )
+        await cache_set(cache_key, result.model_dump())
+        return result
     except Exception as e:
         logger.error("Error compiling patient summary: %s", e, exc_info=True)
         raise HTTPException(
@@ -317,12 +339,16 @@ def get_patient_summary(patient_id: str):
 
 
 @app.get("/api/patients/{patient_id}/risks", response_model=RiskResponse)
-def get_patient_risks(patient_id: str):
+async def get_patient_risks(patient_id: str):
     """
     Runs the summary agent first, then passes the result to the RiskAgent
     to identify dangerous medications, interactions, contraindications, and allergies.
     """
     try:
+        cache_key = f"patient:{patient_id}:risks"
+        cached = await cache_get(cache_key)
+        if cached is not None:
+            return cached
         # 1. Retrieve documents
         retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, k=8)
 
@@ -347,7 +373,7 @@ def get_patient_risks(patient_id: str):
             clinical_summary=summary.clinical_summary,
         )
 
-        return RiskResponse(
+        result = RiskResponse(
             patient_id=patient_id,
             safe_to_prescribe=assessment.safe_to_prescribe,
             summary_note=assessment.summary_note,
@@ -361,6 +387,8 @@ def get_patient_risks(patient_id: str):
                 for f in assessment.risk_flags
             ],
         )
+        await cache_set(cache_key, result.model_dump())
+        return result
     except Exception as e:
         logger.error("Risk assessment failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Risk assessment failed: {str(e)}")
@@ -399,17 +427,21 @@ async def start_scribe(body: ScribeStartRequest):
 
 
 @app.get("/scribe/status", response_model=ScribeDraftResponse)
-def get_scribe_status(thread_id: str):
+async def get_scribe_status(thread_id: str):
     """
     Read the current frozen state of a scribe session without resuming it.
     """
+    cache_key = f"scribe:{thread_id}:status"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     state = scribe_graph.get_thread_state(thread_id)
     if state is None:
         raise HTTPException(
             status_code=404,
             detail=f"No scribe session found for thread_id='{thread_id}'.",
         )
-    return ScribeDraftResponse(
+    result = ScribeDraftResponse(
         thread_id=thread_id,
         patient_id=state.get("patient_id", ""),
         patient_email=state.get("patient_email", ""),
@@ -418,6 +450,8 @@ def get_scribe_status(thread_id: str):
         patient_report_draft=state.get("patient_report_draft", ""),
         status="DISPATCHED" if state.get("is_approved") else "PENDING_APPROVAL",
     )
+    await cache_set(cache_key, result.model_dump())
+    return result
 
 
 @app.post("/scribe/approve", response_model=ScribeApproveResponse)
@@ -438,6 +472,7 @@ async def approve_scribe(body: ScribeApproveRequest):
         raise HTTPException(status_code=500, detail=f"Failed to resume pipeline: {exc}")
 
     post_state = scribe_graph.get_thread_state(body.thread_id) or final_state
+    await cache_delete_pattern(f"scribe:{body.thread_id}:*")
     return ScribeApproveResponse(
         thread_id=body.thread_id,
         patient_id=post_state.get("patient_id", ""),
@@ -522,6 +557,7 @@ async def generate_combined_report_route(
         if all_chunks:
             try:
                 vector_store_service.add_patient_documents(patient_id, all_chunks)
+                await cache_delete_pattern(f"patient:{patient_id}:*")
             except Exception as e:
                 logger.error("Failed to index uploaded reports: %s", e)
                 raise HTTPException(
@@ -589,13 +625,19 @@ async def get_telemetry_logs(limit: int = 50):
     sorted newest-first. Limit defaults to 50.
     """
     try:
+        cache_key = f"telemetry:{limit}"
+        cached = await cache_get(cache_key)
+        if cached is not None:
+            return cached
         collection = get_telemetry_collection()
         cursor = collection.find(
             {},
             {"_id": 0},  # exclude Mongo ObjectId for JSON serialization
         ).sort("timestamp", -1).limit(limit)
         docs = await cursor.to_list(length=limit)
-        return {"events": docs, "count": len(docs)}
+        result = {"events": docs, "count": len(docs)}
+        await cache_set(cache_key, result)
+        return result
     except Exception as exc:
         logger.error("Failed to fetch telemetry logs: %s", exc)
         raise HTTPException(status_code=500, detail=f"Failed to fetch telemetry logs: {str(exc)}")
@@ -658,6 +700,7 @@ async def upload_scribe_audio(
 async def shutdown_event():
     logger.info("Closing MongoDB client...")
     await close_mongo_client()
+    await close_redis_client()
 
 # ── Entry Point ───────────────────────────────────────────────────────────────
 

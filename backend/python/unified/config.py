@@ -7,8 +7,8 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load env variables from .env file
-load_dotenv(override=True)
+# Always load the .env beside this service, regardless of the launch directory.
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env", override=True)
 
 # Base directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -57,3 +57,7 @@ PORT: int = int(os.getenv("PORT", "8003"))  # Running unified on 8003 by default
 
 # ─── Java Spring Boot Sidecar target ──────────────────────────────────────────
 JAVA_BACKEND_URL: str = os.getenv("JAVA_BACKEND_URL", "http://localhost:9090")
+
+# Redis read cache
+REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_TTL_SECONDS: int = int(os.getenv("REDIS_TTL_SECONDS", "60"))

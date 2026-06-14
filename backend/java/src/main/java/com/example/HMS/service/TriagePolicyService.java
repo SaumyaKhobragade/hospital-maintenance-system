@@ -1,6 +1,8 @@
 package com.example.HMS.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,11 +25,13 @@ public class TriagePolicyService {
         return policyMap.getOrDefault(key, defaultValue);
     }
 
+    @CacheEvict(value = "policies", allEntries = true)
     public void updatePolicy(String key, double value) {
         policyMap.put(key, value);
         System.out.println(">>> POLICY UPDATE: " + key + " = " + value);
     }
 
+    @Cacheable("policies")
     public Map<String, Double> getAllPolicies() {
         return new ConcurrentHashMap<>(policyMap);
     }
