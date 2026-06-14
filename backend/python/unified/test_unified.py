@@ -47,7 +47,7 @@ def send_request(url: str, method: str = "GET", data: bytes = None, headers: dic
             res_json = {"error": body}
         return e.code, res_json
 
-def build_multipart_form_data(fields: dict, files: dict) -> tuple[bytes, dict]:
+def build_multipart_form_data(fields, files):
     boundary = f"Boundary-{uuid.uuid4().hex}"
     body = []
     
@@ -61,7 +61,8 @@ def build_multipart_form_data(fields: dict, files: dict) -> tuple[bytes, dict]:
         body.append(str(value).encode("utf-8"))
         
     # Add files
-    for key, (filename, content, mimetype) in files.items():
+    files_list = files.items() if isinstance(files, dict) else files
+    for key, (filename, content, mimetype) in files_list:
         body.append(f"--{boundary}".encode("utf-8"))
         body.append(f'Content-Disposition: form-data; name="{key}"; filename="{filename}"'.encode("utf-8"))
         body.append(f"Content-Type: {mimetype}".encode("utf-8"))
@@ -223,6 +224,54 @@ def run_tests():
         print("[FAIL] Automated report generation failed.")
         sys.exit(1)
     print("[PASS] Automated report generation successful.")
+
+    # ----------------------------------------------------
+    # TEST 9: Combined Report Generation
+    # ----------------------------------------------------
+    print_section("Test 9: Combined Report Generation")
+    
+    pathology_content = (
+        "PATHOLOGY REPORT\n"
+        "Patient ID: {patient_id}\n"
+        "CBC Findings:\n"
+        "- WBC: 12,500 /uL (High)\n"
+        "- RBC: 4.8 M/uL (Normal)\n"
+        "- Platelets: 220,000 /uL (Normal)\n"
+        "- Hb: 13.2 g/dL (Normal)\n"
+        "Clinical impression: Mild leukocytosis, likely reactive."
+    ).format(patient_id=patient_id)
+    
+    radiology_content = (
+        "RADIOLOGY REPORT\n"
+        "Patient ID: {patient_id}\n"
+        "Chest X-Ray (AP View):\n"
+        "Findings: Increased bronchovascular markings and patchy airspace opacities in the right lower lobe.\n"
+        "No pleural effusion or pneumothorax.\n"
+        "Clinical impression: Findings suggestive of right lower lobe pneumonia."
+    ).format(patient_id=patient_id)
+
+    fields = {
+        "patient_email": "testmail-combined@example.com",
+        "additional_context": "Correlate history of asthma and current symptoms of dyspnea and cough."
+    }
+    files_payload = [
+        ("files", ("pathology_report.txt", pathology_content.encode("utf-8"), "text/plain")),
+        ("files", ("radiology_report.txt", radiology_content.encode("utf-8"), "text/plain"))
+    ]
+    
+    payload, headers = build_multipart_form_data(fields, files_payload)
+    status, res = send_request(
+        f"{BASE_URL}/api/patients/{patient_id}/combined-report", 
+        method="POST", 
+        data=payload, 
+        headers=headers
+    )
+    print(f"Status Code: {status}")
+    print(f"Response:\n{json.dumps(res, indent=2)}")
+    if status != 200:
+        print("[FAIL] Combined report generation failed.")
+        sys.exit(1)
+    print("[PASS] Combined report generation successful.")
 
     # Clean up temp audio file
     import os

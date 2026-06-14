@@ -23,6 +23,7 @@ from services.summary_agent import SummaryAgent
 from services.risk_agent import RiskAgent
 from services.scribe_workflow import ScribeWorkflowGraph
 from services.report_workflow import ReportWorkflowGraph
+from services.combined_report import CombinedReportService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +39,7 @@ risk_agent = RiskAgent()
 
 scribe_graph = ScribeWorkflowGraph.get_instance()
 report_graph = ReportWorkflowGraph.get_instance()
+combined_report_service = CombinedReportService()
 
 # ── FastAPI Application ───────────────────────────────────────────────────────
 app = FastAPI(
@@ -121,6 +123,14 @@ class ReportResponse(BaseModel):
     patient_email_body: str
     dispatch_receipt: str
     status: str = "DISPATCHED"
+
+class CombinedReportResponse(BaseModel):
+    patient_id: str
+    patient_email: Optional[str] = None
+    combined_report: str
+    dispatch_receipt: Optional[str] = None
+    status: str
+
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────
@@ -439,6 +449,105 @@ async def generate_report(body: ReportRequest):
         clinical_summary=state.get("clinical_summary", ""),
         patient_email_body=state.get("patient_email_body", ""),
         dispatch_receipt=state.get("dispatch_receipt", ""),
+    )
+
+
+@app.post("/api/patients/{patient_id}/combined-report", response_model=CombinedReportResponse)
+async def generate_combined_report_route(
+    patient_id: str,
+    files: Optional[List[UploadFile]] = File(None),
+    patient_email: Optional[str] = Form(None),
+    additional_context: Optional[str] = Form(None),
+):
+    """
+    Endpoint to ingest pathology, radiology, or lab report files for a patient,
+    index them in ChromaDB, retrieve all patient records, and generate a unified combined report.
+    """
+    logger.info("Combined report generation initiated for patient: %s", patient_id)
+    
+    # 1. Ingest files if provided
+    all_chunks = []
+    if files:
+        for file in files:
+            if not file.filename:
+                continue
+            logger.info("Processing file upload: %s for patient: %s", file.filename, patient_id)
+            try:
+                file_bytes = await file.read()
+                file_text = doc_processor.extract_text(file.filename, file_bytes)
+
+                file_metadata = {
+                    "source": "report_upload",
+                    "filename": file.filename,
+                    "patient_id": patient_id,
+                }
+                file_chunks = doc_processor.chunk_text(file_text, file_metadata)
+                all_chunks.extend(file_chunks)
+            except Exception as e:
+                logger.error("Failed to process file %s: %s", file.filename, e)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Failed to process file {file.filename}: {str(e)}",
+                )
+
+        if all_chunks:
+            try:
+                vector_store_service.add_patient_documents(patient_id, all_chunks)
+            except Exception as e:
+                logger.error("Failed to index uploaded reports: %s", e)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to index uploaded reports: {str(e)}",
+                )
+
+    # 2. Retrieve all documents from ChromaDB (both historical clinical notes and newly uploaded reports)
+    try:
+        retrieved_docs = vector_store_service.retrieve_patient_documents(
+            patient_id,
+            query="pathology radiology clinical laboratory test reports history symptoms chronic conditions",
+            k=15
+        )
+    except Exception as e:
+        logger.error("Failed to retrieve documents: %s", e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve patient medical records: {str(e)}",
+        )
+
+    # 3. Generate combined clinical report via the service
+    try:
+        combined_report_text = combined_report_service.generate_combined_report(
+            patient_id=patient_id,
+            retrieved_docs=retrieved_docs,
+            additional_context=additional_context or ""
+        )
+    except Exception as e:
+        logger.error("Failed to generate combined report: %s", e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate combined clinical report: {str(e)}",
+        )
+
+    # 4. Dispatch email if patient_email is provided
+    dispatch_receipt = None
+    if patient_email and patient_email.strip():
+        from services.tools import send_patient_report_email
+        try:
+            dispatch_receipt = send_patient_report_email.invoke({
+                "patient_email": patient_email,
+                "patient_id": patient_id,
+                "report_body": combined_report_text
+            })
+        except Exception as e:
+            logger.error("Failed to dispatch combined report email: %s", e)
+            dispatch_receipt = f"ERROR | Failed to dispatch email: {str(e)}"
+
+    return CombinedReportResponse(
+        patient_id=patient_id,
+        patient_email=patient_email,
+        combined_report=combined_report_text,
+        dispatch_receipt=dispatch_receipt,
+        status="DISPATCHED" if dispatch_receipt and "SUCCESS" in dispatch_receipt else "GENERATED"
     )
 
 
