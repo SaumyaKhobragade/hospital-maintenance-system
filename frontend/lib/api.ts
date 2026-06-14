@@ -3,7 +3,7 @@
  * All endpoints under /api/simulation and /api/policies.
  */
 
-export const JAVA_API = (process.env.NEXT_PUBLIC_JAVA_API_URL ?? "http://localhost:8080/api").replace(/\/$/, "");
+export const JAVA_API = (process.env.NEXT_PUBLIC_JAVA_API_URL ?? "http://localhost:9090/api").replace(/\/$/, "");
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

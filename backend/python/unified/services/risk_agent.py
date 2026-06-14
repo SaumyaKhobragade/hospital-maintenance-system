@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 import config
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
@@ -65,19 +64,55 @@ class RiskAgent:
     )
 
     def __init__(self):
-        self.llm = ChatGroq(
-            model=config.LLM_MODEL_NAME,
-            groq_api_key=config.GROQ_API_KEY,
-            temperature=0.0,  # deterministic for safety-critical output
-            max_tokens=512,  # keep token usage low; output is structured and short
-        )
-        print(f"[OK] RiskAgent: Initialized ChatGroq with {config.LLM_MODEL_NAME}")
+        self.llm = None
+        if config.LLM_PROVIDER == "ollama":
+            try:
+                from langchain_ollama import ChatOllama
+
+                self.llm = ChatOllama(
+                    model=config.OLLAMA_LLM_MODEL,
+                    base_url=config.OLLAMA_BASE_URL,
+                    temperature=0.0,
+                )
+                print(f"[OK] RiskAgent: Initialized ChatOllama with {config.OLLAMA_LLM_MODEL}")
+            except Exception as exc:
+                print(f"[WARN] RiskAgent: Ollama unavailable ({exc}); using fallback mode")
+        elif config.GROQ_API_KEY:
+            try:
+                from langchain_groq import ChatGroq
+
+                self.llm = ChatGroq(
+                    model=config.LLM_MODEL_NAME,
+                    groq_api_key=config.GROQ_API_KEY,
+                    temperature=0.0,
+                    max_tokens=512,
+                )
+                print(f"[OK] RiskAgent: Initialized ChatGroq with {config.LLM_MODEL_NAME}")
+            except Exception as exc:
+                print(f"[WARN] RiskAgent: Groq unavailable ({exc}); using fallback mode")
+        else:
+            print("[WARN] RiskAgent: No live LLM configured; using fallback mode")
         self._build_graph()
 
     # ── Graph nodes ───────────────────────────────────────────────────────────
 
     def _assess_risks_node(self, state: RiskAgentState) -> Dict[str, Any]:
         """Single node: call LLM with structured output to produce RiskAssessment."""
+        if not self.llm:
+            fallback = RiskAssessment(
+                risk_flags=[
+                    RiskFlag(
+                        risk_type="OTHER",
+                        severity="LOW",
+                        description="Local fallback risk review active; configure GROQ_API_KEY or Ollama for live assessment.",
+                        implicated_items=[],
+                    )
+                ],
+                safe_to_prescribe=False,
+                summary_note="Local fallback mode is active. Review the patient manually or configure a live LLM provider.",
+            )
+            return {"risk_assessment": fallback}
+
         # Build a compact patient context string
         context_lines = [
             f"Chronic conditions: {', '.join(state['chronic_conditions']) or 'None'}",

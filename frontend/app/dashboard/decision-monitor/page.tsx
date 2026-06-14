@@ -4,7 +4,7 @@ import { Fragment, useState, useEffect } from "react";
 const FragmentRow = Fragment;
 import { Download, RefreshCw, Search, ChevronDown, ChevronRight, Route, Flag } from "lucide-react";
 
-import { supabase } from "../../../lib/supabaseClient";
+import { useSseStats } from "../../../lib/SseContext";
 
 interface Decision {
   id: string;
@@ -23,39 +23,56 @@ const typeColor: Record<string, string> = {
   Safe: "bg-emerald-50 text-emerald-700 border-emerald-100",
   Conditional: "bg-amber-50 text-amber-700 border-amber-100",
   Standard: "bg-blue-50 text-blue-700 border-blue-100",
+  safe: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  conditional: "bg-amber-50 text-amber-700 border-amber-100",
+  standard: "bg-blue-50 text-blue-700 border-blue-100",
 };
 
 const statusColor: Record<string, string> = {
   Applied: "bg-emerald-50 text-emerald-700",
   Pending: "bg-amber-50 text-amber-700",
   Rejected: "bg-rose-50 text-rose-700",
+  completed: "bg-emerald-50 text-emerald-700",
+  pending: "bg-amber-50 text-amber-700",
+  failed: "bg-rose-50 text-rose-700",
 };
 
 export default function DecisionMonitor() {
   const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [metrics, setMetrics] = useState({ totalRedirects: 0, avgWaitSaved: 0.0, failedRedirects: 0 });
+  const stats = useSseStats();
 
   const fetchDecisions = async () => {
-    const { data } = await supabase.from("clinical_decisions").select("*").limit(50);
-    if (data) {
-      const mapped = data.map((d: any) => ({
-        id: "D-" + d.id.substring(0, 4),
-        patient: "PT-" + (d.patient_id?.substring(0, 4) || "Unknown"),
-        from: d.from_hospital || "Unknown",
-        to: d.to_hospital || "Unknown",
-        type: d.type || "Standard",
-        reason: d.reason || "Unknown reason",
-        time: d.created_at ? new Date(d.created_at).toLocaleTimeString() : "Just now",
-        status: d.status || "Pending",
-        confidence: d.confidence || 0,
-        policy: d.policy_used || "Unknown"
-      }));
-      setDecisions(mapped);
+    try {
+      const res = await fetch("/api/db/decisions");
+      const json = await res.json();
+      if (json.decisions) {
+        const mapped = json.decisions.map((d: any) => ({
+          id: "D-" + d.id.substring(0, 4),
+          patient: "PT-" + (d.patient_id?.substring(0, 4) || "Unknown"),
+          from: d.from_hospital || "Unknown",
+          to: d.to_hospital || "Unknown",
+          type: d.type || "Standard",
+          reason: d.reason || "Unknown reason",
+          time: d.created_at ? new Date(d.created_at).toLocaleTimeString() : "Just now",
+          status: d.status || "Pending",
+          confidence: d.confidence || 0,
+          policy: d.policy_used || "Unknown"
+        }));
+        setDecisions(mapped);
+      }
+      if (json.metrics) {
+        setMetrics(json.metrics);
+      }
+    } catch (err) {
+      console.error("Failed to fetch decisions:", err);
     }
   };
 
   useEffect(() => {
     fetchDecisions();
-  }, []);
+  }, [stats]);
+
   const [expanded, setExpanded] = useState<string | null>("D-9821");
 
   return (
@@ -73,9 +90,9 @@ export default function DecisionMonitor() {
 
       <div className="grid grid-cols-3 gap-4">
         {[
-          { l: "Total Redirects", v: "1,284", sub: "+12% today", c: "blue" },
-          { l: "Avg Wait Saved", v: "8.4m", sub: "per patient", c: "emerald" },
-          { l: "Failed Redirects", v: "21", sub: "1.6% of total", c: "rose" },
+          { l: "Total Redirects", v: metrics.totalRedirects.toLocaleString(), sub: "Total decisions in DB", c: "blue" },
+          { l: "Avg Wait Saved", v: `${metrics.avgWaitSaved.toFixed(1)}m`, sub: "per patient", c: "emerald" },
+          { l: "Failed Redirects", v: metrics.failedRedirects.toLocaleString(), sub: "Unsuccessful routes", c: "rose" },
         ].map((s) => (
           <div key={s.l} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <p className="text-sm text-slate-500 mb-2">{s.l}</p>
@@ -168,7 +185,7 @@ export default function DecisionMonitor() {
           </tbody>
         </table>
         <div className="p-4 flex items-center justify-between text-sm">
-          <span className="text-slate-500">Showing 5 of 1,284</span>
+          <span className="text-slate-500">Showing {Math.min(decisions.length, 50)} of {metrics.totalRedirects.toLocaleString()}</span>
           <div className="flex gap-2">
             <button className="px-3 py-1.5 rounded-lg border border-slate-200">Prev</button>
             <button className="px-3 py-1.5 rounded-lg border border-slate-200">Next</button>

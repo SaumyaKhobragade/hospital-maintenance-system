@@ -28,8 +28,8 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
 import { AddPatientModal } from "../../../components/AddPatientModal";
-import { supabase } from "../../../lib/supabaseClient";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
+import { useSseStats } from "../../../lib/SseContext";
 
 interface PatientRecord {
   id: string;
@@ -61,38 +61,50 @@ export default function PatientsDirectoryPage() {
   const [filterPriority, setFilterPriority] = useState<string>("All");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const stats = useSseStats();
+  // derived stats from loaded patients
+  const totalPatients = patients.length;
+  const criticalCount = patients.filter(p => p.triagePriority === "Critical" || p.triagePriority === "CRITICAL").length;
+  const waitingCount = patients.filter(p => p.status === "Waiting" || p.status === "WAITING").length;
+  const aiFlaggedCount = patients.filter(p => p.aiRiskScore > 75).length;
+  const emergencyCount = patients.filter(p => p.dept === "Emergency" || p.dept === "EMERGENCY").length;
 
   useEffect(() => {
     const fetchPatients = async () => {
-      const { data, error } = await supabase.from("patients").select("*");
-      if (data) {
-        const mapped = data.map((dbP: any) => ({
-          id: dbP.id,
-          name: dbP.name || "Unknown Patient",
-          age: dbP.age || 0,
-          gender: dbP.gender || "Unknown",
-          bloodGroup: dbP.blood_group || "Unknown",
-          dept: dbP.department || "General",
-          triagePriority: dbP.triage_priority || "Stable",
-          aiRiskScore: dbP.ai_risk_score || 0,
-          status: dbP.status || "Waiting",
-          queuePos: dbP.queue_pos || "-",
-          assignedDoc: dbP.assigned_doc || "Unassigned",
-          lastUpdated: dbP.updated_at ? new Date(dbP.updated_at).toLocaleTimeString() : "-",
-          avatar: dbP.avatar || "",
-          symptoms: dbP.symptoms || [],
-          allergies: dbP.allergies || [],
-          conditions: dbP.conditions || [],
-          aiSummary: dbP.ai_summary || "",
-          alerts: dbP.alerts || [],
-          timeline: dbP.timeline || []
-        }));
-        setPatients(mapped);
-        if (mapped.length > 0) setSelectedPatientId(mapped[0].id);
+      try {
+        const res = await fetch("/api/db/patients");
+        const data: any[] = await res.json();
+        if (Array.isArray(data)) {
+          const mapped = data.map((dbP: any) => ({
+            id: dbP.id,
+            name: dbP.name || "Unknown Patient",
+            age: dbP.age || 0,
+            gender: dbP.gender || "Unknown",
+            bloodGroup: dbP.blood_group || "Unknown",
+            dept: dbP.department || "General",
+            triagePriority: dbP.triage_priority || "Stable",
+            aiRiskScore: dbP.ai_risk_score || 0,
+            status: dbP.status || "Waiting",
+            queuePos: dbP.queue_pos || "-",
+            assignedDoc: dbP.assigned_doc || "Unassigned",
+            lastUpdated: dbP.updated_at ? new Date(dbP.updated_at).toLocaleTimeString() : "-",
+            avatar: dbP.avatar || "",
+            symptoms: dbP.symptoms || [],
+            allergies: dbP.allergies || [],
+            conditions: dbP.conditions || [],
+            aiSummary: dbP.ai_summary || "",
+            alerts: dbP.alerts || [],
+            timeline: dbP.timeline || []
+          }));
+          setPatients(mapped);
+          if (mapped.length > 0) setSelectedPatientId(mapped[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch patients:", err);
       }
     };
     fetchPatients();
-  }, []);
+  }, [stats]);
 
   const selectedPatient = patients.find((p) => p.id === selectedPatientId);
 
@@ -128,7 +140,7 @@ export default function PatientsDirectoryPage() {
               Centralized Patient Directory
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100">
-              2 Emergency Admissions
+              {emergencyCount} Emergency Admission{emergencyCount !== 1 ? "s" : ""}
             </span>
           </div>
           <h1 className="text-slate-900" style={{ fontSize: "22px", fontWeight: 700 }}>Patients</h1>
@@ -147,12 +159,12 @@ export default function PatientsDirectoryPage() {
       {/* 2. Overview Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         {[
-          { label: "Total Patients", value: patients.length.toLocaleString(), change: "Loaded dynamically", icon: Users, color: "bg-blue-50 text-blue-600 border border-blue-100" },
-          { label: "Critical Patients", value: patients.filter(p => p.triagePriority === "Critical" || p.triagePriority === "CRITICAL").length.toLocaleString(), change: "Immediate attention", icon: AlertTriangle, color: "bg-rose-50 text-rose-600 border border-rose-100" },
-          { label: "Patients Waiting", value: patients.filter(p => p.status === "Waiting" || p.status === "WAITING").length.toLocaleString(), change: "In queues", icon: Clock, color: "bg-violet-50 text-violet-600 border border-violet-100" },
-          { label: "AI Flagged Cases", value: patients.filter(p => p.aiRiskScore > 75).length.toLocaleString(), change: "High risk score", icon: Sparkles, color: "bg-amber-50 text-amber-600 border border-amber-100" },
+          { label: "Total Patients", value: totalPatients.toLocaleString(), change: "Loaded dynamically", icon: Users, color: "bg-blue-50 text-blue-600 border border-blue-100" },
+          { label: "Critical Patients", value: criticalCount.toLocaleString(), change: "Immediate attention", icon: AlertTriangle, color: "bg-rose-50 text-rose-600 border border-rose-100" },
+          { label: "Patients Waiting", value: waitingCount.toLocaleString(), change: "In queues", icon: Clock, color: "bg-violet-50 text-violet-600 border border-violet-100" },
+          { label: "AI Flagged Cases", value: aiFlaggedCount.toLocaleString(), change: "High risk score", icon: Sparkles, color: "bg-amber-50 text-amber-600 border border-amber-100" },
           { label: "Active Voice Intakes", value: "0", change: "Dynamic check-ins", icon: Activity, color: "bg-teal-50 text-teal-600 border border-teal-100" },
-          { label: "Emergency Admissions", value: patients.filter(p => p.dept === "Emergency").length.toLocaleString(), change: "Today total", icon: Heart, color: "bg-emerald-50 text-emerald-600 border border-emerald-100" }
+          { label: "Emergency Admissions", value: emergencyCount.toLocaleString(), change: "Today total", icon: Heart, color: "bg-emerald-50 text-emerald-600 border border-emerald-100" }
         ].map((stat, idx) => {
           const Icon = stat.icon;
           return (

@@ -7,6 +7,7 @@ import com.example.HMS.repository.HospitalRepository;
 import com.example.HMS.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.util.Collection;
 import java.util.Map;
@@ -54,6 +55,7 @@ public class HospitalService {
     /**
      * initializes a hospital node with multiple departmental thread pools.
      */
+    @CacheEvict(value = "cityStats", allEntries = true)
     public Hospital createHospital(String id, String name, int maxCapacity) {
         Hospital hospital = Hospital.builder()
                 .id(id)
@@ -183,6 +185,7 @@ public class HospitalService {
         }
     }
 
+    @CacheEvict(value = "cityStats", allEntries = true)
     public void admitPatient(String hospitalId, Patient p) {
         Hospital h = cityHospitals.get(hospitalId);
         if (h != null) {
@@ -217,6 +220,7 @@ public class HospitalService {
         return cityHospitals.get(id);
     }
 
+    @CacheEvict(value = "cityStats", allEntries = true)
     public synchronized void reset() {
         // Shutdown all threads
         for (Hospital h : cityHospitals.values()) {
@@ -228,6 +232,7 @@ public class HospitalService {
         System.out.println("Hospital Simulation State Reset.");
     }
 
+    @CacheEvict(value = "cityStats", allEntries = true)
     public boolean transferPatient(String patientId, String sourceId, String targetId) {
         Hospital source = cityHospitals.get(sourceId);
         Hospital target = cityHospitals.get(targetId);
@@ -278,6 +283,7 @@ public class HospitalService {
         return cityHospitals.values();
     }
 
+    @CacheEvict(value = "cityStats", allEntries = true)
     public synchronized void updateStaffCount(String hospitalId, Department dept, int targetCount) {
         Hospital h = cityHospitals.get(hospitalId);
         if (h != null) {

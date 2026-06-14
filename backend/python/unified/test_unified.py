@@ -273,7 +273,110 @@ def run_tests():
         sys.exit(1)
     print("[PASS] Combined report generation successful.")
 
+    # ----------------------------------------------------
+    # TEST 10: Image Analysis - Analyze Local
+    # ----------------------------------------------------
+    print_section("Test 10: Image Analysis - Analyze Local")
+    image_path = "../imageVideoBackend/SampleImage/test1.jpg"
+    
+    # We pass image_path in query parameter: ?image_path=...
+    # Wait, our route handler: async def analyze_local_injury_image(image_path: str):
+    # This means FastAPI expects image_path as a query param!
+    encoded_path = urllib.parse.quote(image_path)
+    status, res = send_request(
+        f"{BASE_URL}/api/image/analyze-local?image_path={encoded_path}", 
+        method="POST"
+    )
+    print(f"Status Code: {status}")
+    print(f"Response:\n{json.dumps(res, indent=2)}")
+    if status != 200:
+        print("[FAIL] Local image analysis failed.")
+        sys.exit(1)
+    print("[PASS] Local image analysis successful.")
+
+    # ----------------------------------------------------
+    # TEST 11: Image Analysis - Upload & Analyze
+    # ----------------------------------------------------
+    print_section("Test 11: Image Analysis - Upload & Analyze")
+    try:
+        with open("../imageVideoBackend/SampleImage/test1.jpg", "rb") as f:
+            img_bytes = f.read()
+    except FileNotFoundError:
+        print("[FAIL] Sample image test1.jpg not found.")
+        sys.exit(1)
+
+    fields = {}
+    files_payload = [
+        ("image", ("test1.jpg", img_bytes, "image/jpeg"))
+    ]
+    payload, headers = build_multipart_form_data(fields, files_payload)
+    status, res = send_request(
+        f"{BASE_URL}/api/image/analyze", 
+        method="POST", 
+        data=payload, 
+        headers=headers
+    )
+    print(f"Status Code: {status}")
+    print(f"Response:\n{json.dumps(res, indent=2)}")
+    if status != 200:
+        print("[FAIL] Image upload analysis failed.")
+        sys.exit(1)
+    print("[PASS] Image upload analysis successful.")
+
+    # ----------------------------------------------------
+    # TEST 12: Image Analysis - Fetch & Clear Results
+    # ----------------------------------------------------
+    print_section("Test 12: Image Analysis - Get/Clear Results")
+    status, res = send_request(f"{BASE_URL}/api/image/results?limit=5")
+    print(f"GET results status: {status}, count: {len(res) if isinstance(res, list) else 0}")
+    if status != 200 or not isinstance(res, list) or len(res) < 2:
+        print("[FAIL] Get recent image results failed.")
+        sys.exit(1)
+
+    status, res = send_request(f"{BASE_URL}/api/image/results", method="DELETE")
+    print(f"DELETE results status: {status}, response: {res}")
+    if status != 200:
+        print("[FAIL] Clear image results failed.")
+        sys.exit(1)
+    print("[PASS] Image results endpoints successful.")
+
+    # ----------------------------------------------------
+    # TEST 13: Video Analysis - Analyze Local
+    # ----------------------------------------------------
+    print_section("Test 13: Video Analysis - Analyze Local")
+    video_path = "../imageVideoBackend/SampleVideo/clip_01_baseline.mp4"
+    encoded_video_path = urllib.parse.quote(video_path)
+    
+    status, res = send_request(
+        f"{BASE_URL}/api/video/analyze-local?video_path={encoded_video_path}", 
+        method="POST"
+    )
+    print(f"Status Code: {status}")
+    print(f"Response:\n{json.dumps(res, indent=2)}")
+    if status != 200:
+        print("[FAIL] Local video analysis failed.")
+        sys.exit(1)
+    print("[PASS] Local video analysis successful.")
+
+    # ----------------------------------------------------
+    # TEST 14: Video Analysis - Fetch & Clear Events
+    # ----------------------------------------------------
+    print_section("Test 14: Video Analysis - Get/Clear Events")
+    status, res = send_request(f"{BASE_URL}/api/video/events")
+    print(f"GET events status: {status}, count: {len(res) if isinstance(res, list) else 0}")
+    if status != 200:
+        print("[FAIL] Get video events failed.")
+        sys.exit(1)
+
+    status, res = send_request(f"{BASE_URL}/api/video/events", method="DELETE")
+    print(f"DELETE events status: {status}, response: {res}")
+    if status != 200:
+        print("[FAIL] Clear video events failed.")
+        sys.exit(1)
+    print("[PASS] Video analysis endpoints successful.")
+
     # Clean up temp audio file
+
     import os
     try:
         os.remove(temp_audio_path)

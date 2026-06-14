@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 import config
 from db import fire_telemetry, close_mongo_client, get_mongo_client, get_telemetry_collection, get_patients_collection
+from db.redis_cache import cache_delete_pattern, cache_get, cache_set, close_redis_client
 from services.document_processor import DocumentProcessor
 from services.vector_store import VectorStoreService
 from services.summary_agent import SummaryAgent
@@ -28,6 +29,17 @@ from services.scribe_workflow import ScribeWorkflowGraph
 from services.report_workflow import ReportWorkflowGraph
 from services.combined_report import CombinedReportService
 from services.prescription_reader import PrescriptionReaderService
+
+import sys
+from pathlib import Path
+image_video_backend_dir = Path(__file__).resolve().parent.parent / "imageVideoBackend"
+if str(image_video_backend_dir) not in sys.path:
+    sys.path.append(str(image_video_backend_dir))
+
+from models.events import DistressEvent, AnalysisResponse
+from models.injury import InjuryAnalysisResult, ISAHealthResponse
+from image_video_services.image_detection import detect_image, get_results, clear_results
+from image_video_services.video_detection import detect_video, get_events, clear_events
 
 logging.basicConfig(
     level=logging.INFO,
@@ -189,7 +201,7 @@ async def health_check():
 async def ingest_patient_history(
     patient_id: str,
     text: Optional[str] = Form(None),
-    files: Optional[List[UploadFile]] = File(None),
+    files: List[UploadFile] = File(default=[]),
     # Optional patient metadata fields – saved to MongoDB patient registry
     name: Optional[str] = Form(None),
     first_name: Optional[str] = Form(None),
@@ -199,6 +211,7 @@ async def ingest_patient_history(
     address: Optional[str] = Form(None),
     blood_group: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
+
 ):
     """
     Ingests plain text and uploaded files for a patient, chunking and storing them in ChromaDB.
@@ -250,6 +263,8 @@ async def ingest_patient_history(
         raise HTTPException(
             status_code=500, detail=f"Failed to index medical records: {str(e)}"
         )
+
+    await cache_delete_pattern(f"patient:{patient_id}:*")
 
     # 4. Upsert patient metadata into MongoDB patients registry
     resolved_name = (
@@ -306,7 +321,7 @@ async def list_all_patients():
 
 
 @app.get("/api/patients/{patient_id}/chunks")
-def get_patient_chunks(
+async def get_patient_chunks(
     patient_id: str,
     query: str = "medical history symptoms allergies medications",
     k: int = 20,
@@ -316,26 +331,38 @@ def get_patient_chunks(
     Supports an optional semantic query to re-rank which chunks surface first.
     k: max number of chunks to return (default 20).
     """
+    cache_key = f"patient:{patient_id}:chunks:{query}:{k}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, query=query, k=k)
 
     if not retrieved_docs:
-        return {
+        result = {
             "patient_id": patient_id,
             "chunks": [],
             "count": 0,
             "message": "No records found. Register this patient first via Add Patient.",
         }
+        await cache_set(cache_key, result)
+        return result
 
-    return {
+    result = {
         "patient_id": patient_id,
         "chunks": retrieved_docs,   # [{"page_content": str, "metadata": dict}, ...]
         "count": len(retrieved_docs),
     }
+    await cache_set(cache_key, result)
+    return result
 
 
 @app.get("/api/patients/{patient_id}/retrieve")
-def get_patient_details(patient_id: str):
+async def get_patient_details(patient_id: str):
     """Backwards-compat alias — returns first chunk only."""
+    cache_key = f"patient:{patient_id}:retrieve"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, k=8)
     if not retrieved_docs:
         return SummaryResponse(
@@ -347,15 +374,21 @@ def get_patient_details(patient_id: str):
             clinical_summary="No medical records found for this patient.",
             retrieved_snippets=[],
         )
-    return retrieved_docs[0]
+    result = retrieved_docs[0]
+    await cache_set(cache_key, result)
+    return result
 
 
 @app.get("/api/patients/{patient_id}/summary", response_model=SummaryResponse)
-def get_patient_summary(patient_id: str):
+async def get_patient_summary(patient_id: str):
     """
     Retrieves the patient's records, runs the LangGraph summary agent, and returns the structured summary.
     """
     try:
+        cache_key = f"patient:{patient_id}:summary"
+        cached = await cache_get(cache_key)
+        if cached is not None:
+            return cached
         # 1. Retrieve patient documents from ChromaDB
         retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, k=8)
 
@@ -377,7 +410,7 @@ def get_patient_summary(patient_id: str):
         # 3. Extract source text snippets for doctor reference
         snippets = [doc["page_content"] for doc in retrieved_docs]
 
-        return SummaryResponse(
+        result = SummaryResponse(
             patient_id=patient_id,
             chronic_conditions=agent_output.chronic_conditions,
             allergies=agent_output.allergies,
@@ -386,6 +419,8 @@ def get_patient_summary(patient_id: str):
             clinical_summary=agent_output.clinical_summary,
             retrieved_snippets=snippets,
         )
+        await cache_set(cache_key, result.model_dump())
+        return result
     except Exception as e:
         logger.error("Error compiling patient summary: %s", e, exc_info=True)
         raise HTTPException(
@@ -394,12 +429,16 @@ def get_patient_summary(patient_id: str):
 
 
 @app.get("/api/patients/{patient_id}/risks", response_model=RiskResponse)
-def get_patient_risks(patient_id: str):
+async def get_patient_risks(patient_id: str):
     """
     Runs the summary agent first, then passes the result to the RiskAgent
     to identify dangerous medications, interactions, contraindications, and allergies.
     """
     try:
+        cache_key = f"patient:{patient_id}:risks"
+        cached = await cache_get(cache_key)
+        if cached is not None:
+            return cached
         # 1. Retrieve documents
         retrieved_docs = vector_store_service.retrieve_patient_documents(patient_id, k=8)
 
@@ -424,7 +463,7 @@ def get_patient_risks(patient_id: str):
             clinical_summary=summary.clinical_summary,
         )
 
-        return RiskResponse(
+        result = RiskResponse(
             patient_id=patient_id,
             safe_to_prescribe=assessment.safe_to_prescribe,
             summary_note=assessment.summary_note,
@@ -438,6 +477,8 @@ def get_patient_risks(patient_id: str):
                 for f in assessment.risk_flags
             ],
         )
+        await cache_set(cache_key, result.model_dump())
+        return result
     except Exception as e:
         logger.error("Risk assessment failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Risk assessment failed: {str(e)}")
@@ -477,17 +518,21 @@ async def start_scribe(body: ScribeStartRequest):
 
 
 @app.get("/scribe/status", response_model=ScribeDraftResponse)
-def get_scribe_status(thread_id: str):
+async def get_scribe_status(thread_id: str):
     """
     Read the current frozen state of a scribe session without resuming it.
     """
+    cache_key = f"scribe:{thread_id}:status"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     state = scribe_graph.get_thread_state(thread_id)
     if state is None:
         raise HTTPException(
             status_code=404,
             detail=f"No scribe session found for thread_id='{thread_id}'.",
         )
-    return ScribeDraftResponse(
+    result = ScribeDraftResponse(
         thread_id=thread_id,
         patient_id=state.get("patient_id", ""),
         patient_email=state.get("patient_email", ""),
@@ -496,6 +541,8 @@ def get_scribe_status(thread_id: str):
         patient_report_draft=state.get("patient_report_draft", ""),
         status="DISPATCHED" if state.get("is_approved") else "PENDING_APPROVAL",
     )
+    await cache_set(cache_key, result.model_dump())
+    return result
 
 
 @app.post("/scribe/approve", response_model=ScribeApproveResponse)
@@ -516,6 +563,7 @@ async def approve_scribe(body: ScribeApproveRequest):
         raise HTTPException(status_code=500, detail=f"Failed to resume pipeline: {exc}")
 
     post_state = scribe_graph.get_thread_state(body.thread_id) or final_state
+    await cache_delete_pattern(f"scribe:{body.thread_id}:*")
     return ScribeApproveResponse(
         thread_id=body.thread_id,
         patient_id=post_state.get("patient_id", ""),
@@ -562,7 +610,7 @@ async def generate_report(body: ReportRequest):
 @app.post("/api/patients/{patient_id}/combined-report", response_model=CombinedReportResponse)
 async def generate_combined_report_route(
     patient_id: str,
-    files: Optional[List[UploadFile]] = File(None),
+    files: List[UploadFile] = File(default=[]),
     patient_email: Optional[str] = Form(None),
     additional_context: Optional[str] = Form(None),
 ):
@@ -600,6 +648,7 @@ async def generate_combined_report_route(
         if all_chunks:
             try:
                 vector_store_service.add_patient_documents(patient_id, all_chunks)
+                await cache_delete_pattern(f"patient:{patient_id}:*")
             except Exception as e:
                 logger.error("Failed to index uploaded reports: %s", e)
                 raise HTTPException(
@@ -792,13 +841,19 @@ async def get_telemetry_logs(limit: int = 50):
     sorted newest-first. Limit defaults to 50.
     """
     try:
+        cache_key = f"telemetry:{limit}"
+        cached = await cache_get(cache_key)
+        if cached is not None:
+            return cached
         collection = get_telemetry_collection()
         cursor = collection.find(
             {},
             {"_id": 0},  # exclude Mongo ObjectId for JSON serialization
         ).sort("timestamp", -1).limit(limit)
         docs = await cursor.to_list(length=limit)
-        return {"events": docs, "count": len(docs)}
+        result = {"events": docs, "count": len(docs)}
+        await cache_set(cache_key, result)
+        return result
     except Exception as exc:
         logger.error("Failed to fetch telemetry logs: %s", exc)
         raise HTTPException(status_code=500, detail=f"Failed to fetch telemetry logs: {str(exc)}")
@@ -857,12 +912,178 @@ async def upload_scribe_audio(
     )
 
 
+# ── Image and Video Detection Endpoints ────────────────────────────────────────
+
+@app.post("/api/image/analyze", response_model=InjuryAnalysisResult, tags=["Injury Analysis"])
+async def analyze_injury_image(image: UploadFile = File(...)):
+    """
+    Analyze an injury image for severity assessment.
+    Upload an image (JPG/PNG) of a visible external injury.
+    """
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    file_ext = Path(image.filename).suffix.lower()
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+        )
+    
+    import tempfile
+    import os
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+        try:
+            content = await image.read()
+            tmp_file.write(content)
+            tmp_file.flush()
+            
+            # Use service layer
+            result = detect_image(tmp_file.name)
+            return result
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error("Error analyzing image: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error analyzing image: {str(e)}")
+        finally:
+            try:
+                os.unlink(tmp_file.name)
+            except Exception:
+                pass
+
+
+@app.post("/api/image/analyze-local", response_model=InjuryAnalysisResult, tags=["Injury Analysis"])
+async def analyze_local_injury_image(image_path: str):
+    """
+    Analyze an injury image from local filesystem.
+    """
+    path = Path(image_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Image file not found: {image_path}")
+    
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    if path.suffix.lower() not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Invalid image format")
+        
+    try:
+        result = detect_image(str(path))
+        return result
+    except Exception as e:
+        logger.error("Error analyzing local image: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error analyzing image: {str(e)}")
+
+
+@app.get("/api/image/results", response_model=List[InjuryAnalysisResult], tags=["Injury Analysis"])
+async def get_injury_results(limit: int = 10):
+    """
+    Get recent injury analysis results.
+    """
+    return get_results(limit)
+
+
+@app.delete("/api/image/results", tags=["Injury Analysis"])
+async def clear_injury_results():
+    """
+    Clear all stored injury analysis results.
+    """
+    return clear_results()
+
+
+@app.post("/api/video/analyze", response_model=AnalysisResponse, tags=["Video Analysis"])
+async def analyze_video_feed(video: UploadFile = File(...)):
+    """
+    Analyze a video file for behavioral distress signals.
+    """
+    allowed_extensions = {".mp4", ".avi", ".mov", ".mkv"}
+    file_ext = Path(video.filename).suffix.lower()
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+        )
+        
+    import tempfile
+    import os
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+        try:
+            content = await video.read()
+            tmp_file.write(content)
+            tmp_file.flush()
+            
+            # Use service layer
+            response = detect_video(tmp_file.name)
+            return response
+        except Exception as e:
+            logger.error("Error analyzing video: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+        finally:
+            try:
+                os.unlink(tmp_file.name)
+            except Exception:
+                pass
+
+
+@app.post("/api/video/analyze-local", response_model=AnalysisResponse, tags=["Video Analysis"])
+async def analyze_local_video_feed(video_path: str):
+    """
+    Analyze a video file from local filesystem.
+    """
+    path = Path(video_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Video file not found: {video_path}")
+        
+    if path.suffix.lower() not in {".mp4", ".avi", ".mov", ".mkv"}:
+        raise HTTPException(status_code=400, detail="Invalid video format")
+        
+    try:
+        response = detect_video(str(path))
+        return response
+    except Exception as e:
+        logger.error("Error analyzing local video: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+
+
+@app.get("/api/video/events", response_model=List[DistressEvent], tags=["Video Analysis"])
+async def get_video_distress_events():
+    """
+    Get all stored distress events.
+    """
+    return get_events()
+
+
+@app.delete("/api/video/events", tags=["Video Analysis"])
+async def clear_video_distress_events():
+    """
+    Clear all stored distress events.
+    """
+    return clear_events()
+
+
+@app.get("/api/image/health", response_model=ISAHealthResponse, tags=["Injury Analysis"])
+async def get_isa_health():
+    """
+    Health check for ISA module.
+    """
+    from core.injury_analyzer import get_analyzer
+    analyzer = get_analyzer()
+    return ISAHealthResponse(
+        status="healthy",
+        modelLoaded=analyzer.is_model_loaded(),
+        version="1.0.0"
+    )
+
+
 # ── Shutdown Hook ─────────────────────────────────────────────────────────────
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Closing MongoDB client...")
     await close_mongo_client()
+    await close_redis_client()
 
 # ── Entry Point ───────────────────────────────────────────────────────────────
 

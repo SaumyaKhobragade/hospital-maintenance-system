@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Search, ChevronDown, MoreHorizontal, Filter, Phone, ChevronLeft, ChevronRight, Wifi } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useSseStats } from "../lib/SseContext";
-import { supabase } from "../lib/supabaseClient";
 
 type Patient = {
   no: string;
@@ -36,24 +35,29 @@ export function PatientTable() {
 
   useEffect(() => {
     async function fetchPatients() {
-      const { data, error } = await supabase.from("patients").select("*").limit(20);
-      if (!error && data) {
-        const mapped = data.map((p, i) => ({
-          no: String(i + 1).padStart(2, "0"),
-          id: p.id.split("-")[0].toUpperCase(),
-          name: p.name || "Unknown",
-          age: p.age || 0,
-          contact: "+1 555-0000",
-          joinDate: new Date(p.created_at).toLocaleDateString(),
-          lastVisit: new Date(p.updated_at).toLocaleDateString(),
-          status: p.status || "Waiting",
-          avatar: p.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80",
-        }));
-        setPatients(mapped);
+      try {
+        const res = await fetch("/api/db/patients");
+        const data: any[] = await res.json();
+        if (Array.isArray(data)) {
+          const mapped = data.slice(0, 20).map((p, i) => ({
+            no: String(i + 1).padStart(2, "0"),
+            id: p.id.split("-")[0].toUpperCase(),
+            name: p.name || "Unknown",
+            age: p.age || 0,
+            contact: "+1 555-0000",
+            joinDate: new Date(p.created_at).toLocaleDateString(),
+            lastVisit: new Date(p.updated_at || p.created_at).toLocaleDateString(),
+            status: p.status || "Waiting",
+            avatar: p.avatar || "",
+          }));
+          setPatients(mapped);
+        }
+      } catch (err) {
+        console.error("PatientTable fetch failed:", err);
       }
     }
     fetchPatients();
-  }, []);
+  }, [stats]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100">

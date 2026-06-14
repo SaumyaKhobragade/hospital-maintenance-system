@@ -12,12 +12,66 @@ Returns a standard BaseChatModel so all downstream nodes are provider-agnostic.
 from __future__ import annotations
 
 import logging
+from typing import Any, List, Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.outputs import ChatGeneration, ChatResult
 
 import config
 
 logger = logging.getLogger(__name__)
+
+
+class MockChatModel(BaseChatModel):
+    """Deterministic local fallback used when no live LLM provider is configured."""
+
+    model_name: str = "mock-local"
+
+    @property
+    def _llm_type(self) -> str:
+        return self.model_name
+
+    def _generate(self, messages: List[BaseMessage], stop: Optional[List[str]] = None, **kwargs: Any) -> ChatResult:
+        prompt_text = "\n".join(getattr(message, "content", str(message)) for message in messages)
+        lower_prompt = prompt_text.lower()
+
+        if "soap" in lower_prompt:
+            content = (
+                "SUBJECTIVE:\n"
+                "Not available from transcript.\n\n"
+                "OBJECTIVE:\n"
+                "Not available from transcript.\n\n"
+                "ASSESSMENT:\n"
+                "No live LLM configured. Using local fallback SOAP note.\n\n"
+                "PLAN:\n"
+                "Review the patient manually and configure GROQ_API_KEY or OLLAMA if live generation is required."
+            )
+        elif "warm" in lower_prompt or "patient email body" in lower_prompt:
+            content = (
+                "Your Test Results Summary:\n"
+                "- A local fallback generated this message because no live LLM is configured.\n\n"
+                "What These Results Mean For You:\n"
+                "- The backend is running in demo mode.\n\n"
+                "What You Should Do Next:\n"
+                "- Provide GROQ_API_KEY or run Ollama to enable live AI output.\n\n"
+                "Important Warning Signs:\n"
+                "- If you feel worse, contact your clinician or go to the nearest emergency room."
+            )
+        elif "clinical" in lower_prompt and "summary" in lower_prompt:
+            content = (
+                "Local fallback clinical summary: the system is running without a live LLM. "
+                "Relevant details should be reviewed manually until a provider key or Ollama is configured."
+            )
+        elif "anomaly" in lower_prompt or "risk" in lower_prompt:
+            content = (
+                "- No live LLM configured; using local fallback analysis.\n"
+                "- Overall Risk Assessment: MODERATE"
+            )
+        else:
+            content = "Local fallback response: configure GROQ_API_KEY or OLLAMA for live generation."
+
+        return ChatResult(generations=[ChatGeneration(message=AIMessage(content=content))])
 
 
 def build_llm(temperature: float = 0.2) -> BaseChatModel:
@@ -67,10 +121,8 @@ def build_llm(temperature: float = 0.2) -> BaseChatModel:
             ) from exc
 
         if not config.GROQ_API_KEY:
-            raise ValueError(
-                "GROQ_API_KEY is not set. "
-                "Please configure it in your .env file."
-            )
+            logger.warning("[LLM] GROQ_API_KEY is not set; using local mock model instead.")
+            return MockChatModel()
 
         llm = ChatGroq(
             model=config.GROQ_LLM_MODEL,
@@ -84,7 +136,5 @@ def build_llm(temperature: float = 0.2) -> BaseChatModel:
         return llm
 
     else:
-        raise ValueError(
-            f"Unknown LLM_PROVIDER='{provider}'. "
-            "Valid options are: 'ollama', 'groq'."
-        )
+        logger.warning("[LLM] Unknown provider '%s'; using local mock model.", provider)
+        return MockChatModel()

@@ -18,6 +18,7 @@ import motor.motor_asyncio
 from pymongo.errors import PyMongoError
 
 import config
+from db.redis_cache import cache_delete_pattern
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,7 @@ async def _insert_telemetry_safe(document: Dict[str, Any]) -> None:
     try:
         collection = get_telemetry_collection()
         result = await collection.insert_one(document)
+        await cache_delete_pattern("telemetry:*")
         logger.info(
             "[MongoDB] Telemetry logged → _id=%s  event_type=%s",
             result.inserted_id,
