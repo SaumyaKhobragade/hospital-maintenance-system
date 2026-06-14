@@ -4,6 +4,7 @@ import { ArrowLeft, FileText, AlertCircle, Users, Stethoscope, MoreHorizontal } 
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 import { useEffect, useState } from "react";
+import { useSseStats } from "../../../lib/SseContext";
 
 interface Treatment {
   id: string;
@@ -24,10 +25,14 @@ const sevColor: Record<string, string> = {
 export default function QueueDetails() {
   const [patients, setPatients] = useState<any[]>([]);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
+  const stats = useSseStats();
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: pData } = await supabase.from("patients").select("*");
+      const { data: pData } = await supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (pData) {
         const mapped = pData.map((d: any) => ({
           id: d.id.substring(0, 8),
@@ -40,7 +45,10 @@ export default function QueueDetails() {
         setPatients(mapped);
       }
 
-      const { data: tData } = await supabase.from("active_treatments").select("*");
+      const { data: tData } = await supabase
+        .from("active_treatments")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (tData) {
         const mappedT = tData.map((t: any) => ({
           id: t.patient_id ? "PT-" + t.patient_id.substring(0,4) : "PT-0000",
@@ -54,7 +62,7 @@ export default function QueueDetails() {
       }
     };
     fetchData();
-  }, []);
+  }, [stats]);
   return (
     <>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center justify-between">

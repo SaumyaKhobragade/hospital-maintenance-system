@@ -36,7 +36,11 @@ export function PatientTable() {
 
   useEffect(() => {
     async function fetchPatients() {
-      const { data, error } = await supabase.from("patients").select("*").limit(20);
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
       if (!error && data) {
         const mapped = data.map((p, i) => ({
           no: String(i + 1).padStart(2, "0"),
@@ -53,7 +57,7 @@ export function PatientTable() {
       }
     }
     fetchPatients();
-  }, []);
+  }, [stats]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100">

@@ -30,6 +30,7 @@ import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
 import { AddPatientModal } from "../../../components/AddPatientModal";
 import { supabase } from "../../../lib/supabaseClient";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
+import { useSseStats } from "../../../lib/SseContext";
 
 interface PatientRecord {
   id: string;
@@ -61,10 +62,14 @@ export default function PatientsDirectoryPage() {
   const [filterPriority, setFilterPriority] = useState<string>("All");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const stats = useSseStats();
 
   useEffect(() => {
     const fetchPatients = async () => {
-      const { data, error } = await supabase.from("patients").select("*");
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (data) {
         const mapped = data.map((dbP: any) => ({
           id: dbP.id,
@@ -92,7 +97,7 @@ export default function PatientsDirectoryPage() {
       }
     };
     fetchPatients();
-  }, []);
+  }, [stats]);
 
   const selectedPatient = patients.find((p) => p.id === selectedPatientId);
 

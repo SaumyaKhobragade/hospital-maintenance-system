@@ -5,6 +5,7 @@ const FragmentRow = Fragment;
 import { Download, RefreshCw, Search, ChevronDown, ChevronRight, Route, Flag } from "lucide-react";
 
 import { supabase } from "../../../lib/supabaseClient";
+import { useSseStats } from "../../../lib/SseContext";
 
 interface Decision {
   id: string;
@@ -23,19 +24,32 @@ const typeColor: Record<string, string> = {
   Safe: "bg-emerald-50 text-emerald-700 border-emerald-100",
   Conditional: "bg-amber-50 text-amber-700 border-amber-100",
   Standard: "bg-blue-50 text-blue-700 border-blue-100",
+  safe: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  conditional: "bg-amber-50 text-amber-700 border-amber-100",
+  standard: "bg-blue-50 text-blue-700 border-blue-100",
 };
 
 const statusColor: Record<string, string> = {
   Applied: "bg-emerald-50 text-emerald-700",
   Pending: "bg-amber-50 text-amber-700",
   Rejected: "bg-rose-50 text-rose-700",
+  completed: "bg-emerald-50 text-emerald-700",
+  pending: "bg-amber-50 text-amber-700",
+  failed: "bg-rose-50 text-rose-700",
 };
 
 export default function DecisionMonitor() {
   const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [metrics, setMetrics] = useState({ totalRedirects: 0, avgWaitSaved: 0.0, failedRedirects: 0 });
+  const stats = useSseStats();
 
   const fetchDecisions = async () => {
-    const { data } = await supabase.from("clinical_decisions").select("*").limit(50);
+    // 1. Fetch latest 50 decisions
+    const { data } = await supabase
+      .from("clinical_decisions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
     if (data) {
       const mapped = data.map((d: any) => ({
         id: "D-" + d.id.substring(0, 4),
@@ -51,11 +65,30 @@ export default function DecisionMonitor() {
       }));
       setDecisions(mapped);
     }
+
+    // 2. Fetch overall metrics from database
+    const { data: allDecisions } = await supabase
+      .from("clinical_decisions")
+      .select("status, confidence");
+
+    if (allDecisions) {
+      const total = allDecisions.length;
+      const totalWaitSaved = allDecisions.reduce((sum: number, d: any) => sum + ((d.confidence || 0) / 10), 0);
+      const avgWait = total > 0 ? (totalWaitSaved / total) : 0;
+      const failed = allDecisions.filter((d: any) => d.status?.toLowerCase() === "failed" || d.status?.toLowerCase() === "rejected").length;
+
+      setMetrics({
+        totalRedirects: total,
+        avgWaitSaved: avgWait,
+        failedRedirects: failed
+      });
+    }
   };
 
   useEffect(() => {
     fetchDecisions();
-  }, []);
+  }, [stats]);
+
   const [expanded, setExpanded] = useState<string | null>("D-9821");
 
   return (
@@ -73,9 +106,9 @@ export default function DecisionMonitor() {
 
       <div className="grid grid-cols-3 gap-4">
         {[
-          { l: "Total Redirects", v: "1,284", sub: "+12% today", c: "blue" },
-          { l: "Avg Wait Saved", v: "8.4m", sub: "per patient", c: "emerald" },
-          { l: "Failed Redirects", v: "21", sub: "1.6% of total", c: "rose" },
+          { l: "Total Redirects", v: metrics.totalRedirects.toLocaleString(), sub: "Total decisions in DB", c: "blue" },
+          { l: "Avg Wait Saved", v: `${metrics.avgWaitSaved.toFixed(1)}m`, sub: "per patient", c: "emerald" },
+          { l: "Failed Redirects", v: metrics.failedRedirects.toLocaleString(), sub: "Unsuccessful routes", c: "rose" },
         ].map((s) => (
           <div key={s.l} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <p className="text-sm text-slate-500 mb-2">{s.l}</p>

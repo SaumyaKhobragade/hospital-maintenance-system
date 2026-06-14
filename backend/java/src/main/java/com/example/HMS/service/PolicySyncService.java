@@ -46,7 +46,7 @@ public class PolicySyncService {
     @Scheduled(fixedRateString = "${supabase.policy.sync.interval:30000}")
     public void syncPoliciesFromSupabase() {
         try {
-            String endpoint = supabaseUrl + "/rest/v1/policies?is_active=eq.true&select=*";
+            String endpoint = supabaseUrl + "/rest/v1/hospital_policies?active=eq.true&select=*";
 
             Request request = new Request.Builder()
                     .url(endpoint)
@@ -73,8 +73,8 @@ public class PolicySyncService {
             // Get the first active policy (should only be one)
             JSONObject activePolicy = policies.getJSONObject(0);
             String policyId = activePolicy.getString("id");
-            String policyName = activePolicy.getString("name");
-            String updatedAt = activePolicy.getString("updated_at");
+            String policyName = activePolicy.optString("name", "Custom Policy");
+            String updatedAt = activePolicy.optString("updated_at", "");
 
             // Check if policy has changed since last sync
             if (policyId.equals(lastSyncedPolicyId) && updatedAt.equals(lastSyncedTimestamp)) {
@@ -83,24 +83,17 @@ public class PolicySyncService {
             }
 
             // Extract policy parameters
-            double severityWeight = activePolicy.getDouble("severity_weight");
-            int agingRateMinutes = activePolicy.getInt("aging_rate_minutes");
-            boolean enableAging = activePolicy.getBoolean("enable_aging");
-            double distressDecay = activePolicy.getDouble("distress_decay");
-            boolean isAlertMode = activePolicy.getBoolean("is_alert_mode");
+            double severityWeight = activePolicy.optDouble("severity_weight", 1.0);
+            double agingFactor = activePolicy.optDouble("aging_factor", 0.5);
+            double agingEnabled = activePolicy.optDouble("aging_enabled", 1.0);
+            double distressDecay = activePolicy.optDouble("distress_decay", 0.5);
+            boolean isAlertMode = activePolicy.optBoolean("is_alert_mode", false);
 
             // Update in-memory policy service
             triagePolicyService.updatePolicy("severity_weight", severityWeight);
-            
-            // Convert aging_rate_minutes to aging_factor (points per minute)
-            // The frontend stores "how often to escalate" but we need "how much per minute"
-            double agingFactor = 60.0 / agingRateMinutes; // e.g., 15 min → 4 points/min
             triagePolicyService.updatePolicy("aging_factor", agingFactor);
-            
-            triagePolicyService.updatePolicy("enable_aging", enableAging ? 1.0 : 0.0);
+            triagePolicyService.updatePolicy("enable_aging", agingEnabled);
             triagePolicyService.updatePolicy("distress_decay", distressDecay);
-            
-            // Store alert mode as a policy value for potential future use
             triagePolicyService.updatePolicy("alert_mode", isAlertMode ? 1.0 : 0.0);
 
             // Update sync tracking
@@ -113,11 +106,12 @@ public class PolicySyncService {
             System.out.println("✅ POLICY SYNCED from Supabase at " + timestamp);
             System.out.println("   Policy: " + policyName + " (" + policyId + ")");
             System.out.println("   Severity Weight: " + severityWeight);
-            System.out.println("   Aging Factor: " + agingFactor + " (from " + agingRateMinutes + " min)");
-            System.out.println("   Aging Enabled: " + enableAging);
+            System.out.println("   Aging Factor: " + agingFactor);
+            System.out.println("   Aging Enabled: " + agingEnabled);
             System.out.println("   Distress Decay: " + distressDecay);
             System.out.println("   Alert Mode: " + isAlertMode);
             System.out.println("═══════════════════════════════════════════════════════\n");
+
 
         } catch (Exception e) {
             System.err.println("❌ Error syncing policies from Supabase: " + e.getMessage());

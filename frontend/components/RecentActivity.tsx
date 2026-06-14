@@ -50,7 +50,7 @@ export function RecentActivity() {
   const events = useSseEvents();
 
   const items = events.length > 0
-    ? events.slice(0, 8).map((ev) => ({
+    ? events.slice(0, 50).map((ev) => ({
         ev,
         label: eventLabel(ev),
         time: relTime(ev.timestamp),
@@ -59,8 +59,8 @@ export function RecentActivity() {
     : null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col h-[340px]">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="text-slate-900" style={{ fontWeight: 600 }}>Live Events</h3>
           {events.length > 0 && (
@@ -72,7 +72,7 @@ export function RecentActivity() {
         <button className="text-slate-400 hover:text-slate-700"><MoreVertical className="w-4 h-4" /></button>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex-1 overflow-y-auto pr-1 space-y-3 scrollbar-thin">
         {items
           ? items.map(({ ev, label, time, cfg }) => {
               const Icon = cfg.icon;
