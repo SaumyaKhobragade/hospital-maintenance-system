@@ -18,16 +18,17 @@ import {
   Sparkle,
   WifiOff,
 } from "lucide-react";
-<<<<<<< HEAD
 import { pythonApi, SummaryResponse, RiskResponse } from "@/lib/pythonApi";
 
-const PATIENTS = [
-  { id: "PT-9042", name: "Sarah Jenkins", age: 62, bloodGroup: "A+" },
-  { id: "PT-7719", name: "Robert Chen", age: 45, bloodGroup: "O-" },
-  { id: "PT-5521", name: "Elena Rostova", age: 58, bloodGroup: "B-" },
+// Fallback patient presets shown until the MongoDB registry responds
+const PATIENT_PRESETS = [
+  { id: "PT-9042", name: "Sarah Jenkins", blood_group: "A+" },
+  { id: "PT-7719", name: "Robert Chen", blood_group: "O-" },
+  { id: "PT-5521", name: "Elena Rostova", blood_group: "B-" },
 ];
 
 export default function AIClinicalSummaryPage() {
+  const [allPatients, setAllPatients] = useState(PATIENT_PRESETS);
   const [selectedPatientId, setSelectedPatientId] = useState("PT-9042");
   const [isProcessing, setIsProcessing] = useState(false);
   const [pipelineProgress, setPipelineProgress] = useState(0);
@@ -36,86 +37,34 @@ export default function AIClinicalSummaryPage() {
   const [risks, setRisks] = useState<RiskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const activePatient = PATIENTS.find((p) => p.id === selectedPatientId) || PATIENTS[0];
-=======
-import { supabase } from "../../../lib/supabaseClient";
+  const activePatient = allPatients.find((p) => p.id === selectedPatientId) || allPatients[0];
 
-interface Patient {
-  id: string;
-  name: string;
-  patientId: string;
-  age: number;
-  bloodGroup: string;
-  riskLevel: "CRITICAL" | "HIGH" | "MEDIUM";
-  symptoms: string[];
-  allergies: string[];
-  conditions: string[];
-  confidence: number;
-  summary: string;
-  ocr: {
-    imageName: string;
-    extractedMedications: { name: string; dosage: string; confidence: number; status: string }[];
-    ocrConfidence: number;
-    status: string;
-  };
-  rag: {
-    chunks: { text: string; similarity: number; source: string }[];
-    vectorConfidence: number;
-    insights: string[];
-  };
-  alerts: { type: "critical" | "warning" | "info"; msg: string; dept: string; priority: string }[];
-  timeline: { step: string; status: "completed" | "processing" | "pending"; time: string }[];
-}
-
-export default function AIClinicalSummaryPage() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatingStep, setGeneratingStep] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [pipelineProgress, setPipelineProgress] = useState(0);
-  const [pipelineStep, setPipelineStep] = useState("Ready");
-  const [ocrBoundingBoxActive, setOcrBoundingBoxActive] = useState<number | null>(null);
-
+  // Load patient list from MongoDB registry on mount
   useEffect(() => {
-    const fetchPatients = async () => {
-      const { data, error } = await supabase.from("patients").select("*");
-      if (data) {
-        const mapped = data.map((dbP: any) => ({
-          id: dbP.id,
-          name: dbP.name || "Unknown Patient",
-          patientId: "PT-" + dbP.id.substring(0, 4),
-          age: dbP.age || 0,
-          bloodGroup: dbP.blood_group || "Unknown",
-          riskLevel: dbP.base_severity > 7 ? "CRITICAL" : dbP.base_severity > 4 ? "HIGH" : "MEDIUM",
-          symptoms: dbP.symptoms || [],
-          allergies: dbP.allergies || [],
-          conditions: dbP.conditions || [],
-          confidence: dbP.ai_risk_score || 0,
-          summary: dbP.ai_summary || "No summary available.",
-          ocr: {
-            imageName: "scanned_rx.pdf",
-            extractedMedications: [],
-            ocrConfidence: 0,
-            status: "Pending"
-          },
-          rag: {
-            chunks: [],
-            vectorConfidence: 0,
-            insights: []
-          },
-          alerts: dbP.alerts || [],
-          timeline: dbP.timeline || []
-        }));
-        setPatients(mapped);
-        if (mapped.length > 0) setSelectedPatientId(mapped[0].id);
+    const loadPatients = async () => {
+      try {
+        const res = await pythonApi.listPatients();
+        if (res.patients && res.patients.length > 0) {
+          const mongoPatients = res.patients.map((p) => ({
+            id: p.id,
+            name: p.name,
+            blood_group: p.blood_group || "",
+          }));
+          // Merge: presets first (stable demo IDs), then any additional MongoDB patients
+          const merged = [...PATIENT_PRESETS];
+          mongoPatients.forEach((mp) => {
+            if (!merged.some((ep) => ep.id === mp.id)) {
+              merged.push(mp);
+            }
+          });
+          setAllPatients(merged);
+        }
+      } catch {
+        // Fall back silently to presets if backend is unreachable
       }
     };
-    fetchPatients();
+    loadPatients();
   }, []);
-
-  const activePatient = patients.find((p) => p.id === selectedPatientId) || patients[0];
->>>>>>> 94bac8fe2e71ae26466f436c985f54f920c0cf00
 
   const runPipeline = async () => {
     setIsProcessing(true);
@@ -159,7 +108,6 @@ export default function AIClinicalSummaryPage() {
 
   // Auto-load on patient change
   useEffect(() => {
-<<<<<<< HEAD
     runPipeline();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatientId]);
@@ -174,18 +122,6 @@ export default function AIClinicalSummaryPage() {
   const overallRisk = risks?.risk_flags?.length
     ? risks.risk_flags[0]?.severity?.toUpperCase()
     : "UNKNOWN";
-=======
-    if (!activePatient || !activePatient.ocr || !activePatient.ocr.extractedMedications) return;
-    const interval = setInterval(() => {
-      setOcrBoundingBoxActive((prev) => {
-        if (prev === null) return 0;
-        if (prev >= activePatient.ocr.extractedMedications.length - 1) return null;
-        return prev + 1;
-      });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [activePatient]);
->>>>>>> 94bac8fe2e71ae26466f436c985f54f920c0cf00
 
   return (
     <div className="flex flex-col gap-5">
@@ -207,12 +143,8 @@ export default function AIClinicalSummaryPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1">
-<<<<<<< HEAD
-            {PATIENTS.map((p) => (
-=======
-            {patients.map((p) => (
->>>>>>> 94bac8fe2e71ae26466f436c985f54f920c0cf00
+          <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1 flex-wrap">
+            {allPatients.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setSelectedPatientId(p.id)}
@@ -285,11 +217,7 @@ export default function AIClinicalSummaryPage() {
 
       {/* Main Content */}
       <AnimatePresence mode="wait">
-<<<<<<< HEAD
         {!isProcessing && (summary || error) && (
-=======
-        {!isProcessing && activePatient && (
->>>>>>> 94bac8fe2e71ae26466f436c985f54f920c0cf00
           <motion.div
             key={selectedPatientId}
             initial={{ opacity: 0, y: 10 }}

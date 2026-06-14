@@ -53,6 +53,11 @@ def get_telemetry_collection() -> motor.motor_asyncio.AsyncIOMotorCollection:
     return get_db()[config.MONGO_TELEMETRY_COLLECTION]
 
 
+def get_patients_collection() -> motor.motor_asyncio.AsyncIOMotorCollection:
+    """Return the patients registry collection handle."""
+    return get_db()["patients"]
+
+
 # ─── Fire-and-forget telemetry helpers ────────────────────────────────────────
 
 async def _insert_telemetry_safe(document: Dict[str, Any]) -> None:
