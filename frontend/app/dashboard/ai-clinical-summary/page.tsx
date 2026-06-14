@@ -36,6 +36,29 @@ export default function AIClinicalSummaryPage() {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [risks, setRisks] = useState<RiskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
+
+  const handleClearChroma = async () => {
+    if (!window.confirm("Are you sure you want to delete all patient data from ChromaDB? This cannot be undone.")) {
+      return;
+    }
+    setIsClearing(true);
+    setError(null);
+    try {
+      const res = await pythonApi.clearChromaDb();
+      alert(res.message || "ChromaDB vector store cleared successfully!");
+      setSummary(null);
+      setRisks(null);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to clear ChromaDB vector store."
+      );
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   const activePatient = allPatients.find((p) => p.id === selectedPatientId) || allPatients[0];
 
@@ -161,12 +184,22 @@ export default function AIClinicalSummaryPage() {
 
           <button
             onClick={runPipeline}
-            disabled={isProcessing}
+            disabled={isProcessing || isClearing}
             id="run-pipeline-btn"
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition disabled:opacity-50 shadow-sm cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${isProcessing ? "animate-spin" : ""}`} />
             Run Pipeline
+          </button>
+
+          <button
+            onClick={handleClearChroma}
+            disabled={isProcessing || isClearing}
+            id="clear-chroma-btn"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100 transition disabled:opacity-50 shadow-sm cursor-pointer"
+          >
+            <Database className={`w-4 h-4 ${isClearing ? "animate-pulse" : ""}`} />
+            {isClearing ? "Clearing..." : "Clear Chroma DB"}
           </button>
         </div>
       </div>

@@ -80,3 +80,23 @@ class VectorStoreService:
                 "metadata": doc.metadata
             })
         return retrieved_docs
+
+    def clear_database(self) -> bool:
+        """Clear all collections/documents in the vector store."""
+        try:
+            self.vector_store.delete_collection()
+            self.vector_store = Chroma(
+                persist_directory=config.CHROMA_DB_DIR,
+                embedding_function=self.embeddings
+            )
+            print("[OK] ChromaDB collection deleted and re-initialized.")
+            return True
+        except Exception as e:
+            print(f"[ERROR] Failed to clear ChromaDB: {e}")
+            try:
+                self.vector_store._collection.delete()
+                print("[OK] ChromaDB collection cleared using _collection.delete().")
+                return True
+            except Exception as e2:
+                print(f"[ERROR] Fallback clear failed: {e2}")
+                raise e2

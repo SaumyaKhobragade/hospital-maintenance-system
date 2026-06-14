@@ -151,6 +151,17 @@ async function pyPostForm<T>(path: string, form: FormData): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function pyDelete<T>(path: string): Promise<T> {
+  const res = await fetch(`${PYTHON_API}${path}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => res.statusText);
+    throw new Error(`DELETE ${path} failed [${res.status}]: ${detail}`);
+  }
+  return res.json() as Promise<T>;
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export const pythonApi = {
@@ -289,4 +300,8 @@ export const pythonApi = {
    */
   listPatients: () =>
     pyGet<PatientListResponse>("/api/patients"),
+
+  /** Clear all collections/documents in ChromaDB. */
+  clearChromaDb: () =>
+    pyDelete<{ status: string; message: string }>("/api/chroma/clear"),
 };

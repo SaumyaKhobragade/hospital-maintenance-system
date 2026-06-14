@@ -71,6 +71,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.staticfiles import StaticFiles
+videos_dir = Path(__file__).resolve().parent.parent / "imageVideoBackend" / "SampleVideo"
+if videos_dir.exists():
+    app.mount("/static/videos", StaticFiles(directory=str(videos_dir)), name="videos")
+    logger.info("Mounted static videos from %s", videos_dir)
+else:
+    logger.warning("SampleVideo folder not found at %s", videos_dir)
+
+
 
 # ── Pydantic Request/Response Models ──────────────────────────────────────────
 
@@ -926,6 +935,20 @@ async def get_isa_health():
         modelLoaded=analyzer.is_model_loaded(),
         version="1.0.0"
     )
+
+
+@app.delete("/api/chroma/clear", tags=["RAG Medical History"])
+async def clear_chroma_database():
+    """
+    Clear all records from ChromaDB.
+    """
+    try:
+        vector_store_service.clear_database()
+        await cache_delete_pattern("patient:*")
+        return {"status": "success", "message": "ChromaDB vector store cleared successfully."}
+    except Exception as e:
+        logger.error("Error clearing ChromaDB: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to clear ChromaDB: {str(e)}")
 
 
 # ── Shutdown Hook ─────────────────────────────────────────────────────────────

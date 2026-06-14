@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   FileText,
@@ -21,15 +21,9 @@ import {
 } from "lucide-react";
 import { pythonApi, CombinedReportResponse } from "@/lib/pythonApi";
 
-const PATIENT_PRESETS = [
-  { id: "PT-9042", name: "Sarah Jenkins" },
-  { id: "PT-7719", name: "Robert Chen" },
-  { id: "PT-5521", name: "Elena Rostova" },
-  { id: "PT-3312", name: "Marcus Vance" },
-];
 
 export default function CombinedReportPage() {
-  const [patientId, setPatientId] = useState("PT-9042");
+  const [patientId, setPatientId] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [additionalContext, setAdditionalContext] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -38,6 +32,24 @@ export default function CombinedReportPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CombinedReportResponse | null>(null);
   const [showFullReport, setShowFullReport] = useState(false);
+
+  // Real patients from DB
+  const [dbPatients, setDbPatients] = useState<{ id: string; name: string }[]>([]);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/db/patients")
+      .then((r) => r.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data)) {
+          setDbPatients(
+            data.map((p) => ({ id: p.id, name: p.name || "Unknown" }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,31 +138,61 @@ export default function CombinedReportPage() {
               <span className="text-sm font-semibold text-slate-900">Patient Selection</span>
             </div>
 
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-xl p-1 flex-wrap">
-              {PATIENT_PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPatientId(p.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-1 min-w-[80px] ${
-                    patientId === p.id
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  {p.name.split(" ")[0]}
-                  <span className="block text-[9px] font-mono opacity-60">{p.id}</span>
-                </button>
-              ))}
+            {/* Searchable patient picker */}
+            <div className="flex flex-col gap-1 relative">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Search Patient
+              </label>
+              <div className="relative">
+                <input
+                  value={patientSearch}
+                  onChange={(e) => { setPatientSearch(e.target.value); setShowPatientDropdown(true); }}
+                  onFocus={() => setShowPatientDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowPatientDropdown(false), 150)}
+                  placeholder={dbPatients.length ? `Search among ${dbPatients.length} patients…` : "Loading patients…"}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white focus:border-blue-500/35 transition text-slate-800"
+                />
+                {showPatientDropdown && dbPatients.length > 0 && (
+                  <div className="absolute z-20 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {dbPatients
+                      .filter((p) =>
+                        patientSearch === "" ||
+                        p.name.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                        p.id.toLowerCase().includes(patientSearch.toLowerCase())
+                      )
+                      .slice(0, 50)
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          onMouseDown={() => {
+                            setPatientId(p.id);
+                            setPatientSearch(p.name);
+                            setShowPatientDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 transition flex items-center justify-between gap-2 ${
+                            patientId === p.id ? "bg-blue-50 text-blue-700" : "text-slate-700"
+                          }`}
+                        >
+                          <span className="font-medium truncate">{p.name}</span>
+                          <span className="font-mono text-slate-400 shrink-0">{p.id.substring(0, 8)}</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+              {patientId && (
+                <p className="text-[10px] text-emerald-600 font-mono">Selected: {patientId}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Custom Patient ID
+                Or enter Patient ID manually
               </label>
               <input
                 value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-                placeholder="e.g. PT-1234"
+                onChange={(e) => { setPatientId(e.target.value); setPatientSearch(""); }}
+                placeholder="e.g. PT-1234 or UUID"
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white focus:border-blue-500/35 transition text-slate-800 font-mono"
               />
             </div>
